@@ -1,7 +1,6 @@
 package simulator
 
 import (
-	"amazon-connect-simulator/connect"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/edwardbrowncross/amazon-connect-simulator/connect"
 )
 
 type SystemKey string
