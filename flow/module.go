@@ -1,4 +1,4 @@
-package simulator
+package flow
 
 type ModuleID string
 type ModuleType string
@@ -6,6 +6,7 @@ type ModuleTarget string
 type ModuleBranchCondition string
 type ModuleParameterNamespace string
 type ModuleBranchConditionType string
+type SystemKey string
 
 const (
 	ModuleStoreUserInput         ModuleType = "StoreUserInput"
@@ -51,11 +52,11 @@ const (
 	ConditionLT                               = "LessThan"
 )
 
-type Flow struct {
-	Modules  []Module     `json:"modules"`
-	Start    ModuleID     `json:"start"`
-	Metadata FlowMetadata `json:"metadata"`
-}
+const (
+	SystemLastUserInput SystemKey = "Stored customer input"
+	SystemQueueName               = "Queue name"
+	SystemQueueARN                = "Queue ARN"
+)
 
 type Module struct {
 	ID         ModuleID            `json:"id"`
@@ -124,10 +125,4 @@ type ModuleParameter struct {
 }
 
 type ModuleMetadata struct {
-}
-
-type FlowMetadata struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
 }
