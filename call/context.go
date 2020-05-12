@@ -9,10 +9,12 @@ import (
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
+// Runner takes a call context and returns the ID of the next block to run, or nil if the call is over.
 type Runner interface {
 	Run(*Context) (*flow.ModuleID, error)
 }
 
+// Context is the internal state machine behind a call.
 type Context struct {
 	o            chan<- string
 	i            <-chan rune
@@ -24,10 +26,13 @@ type Context struct {
 	getRunner    func(withID flow.ModuleID) Runner
 }
 
+// Send sends spoken text to the speaker.
 func (ctx *Context) Send(s string) {
 	ctx.o <- s
 }
 
+// Receive waits for a number of characters to be input.
+// If the first character is not received before the timeout time, it returns nil.
 func (ctx *Context) Receive(count int, timeout time.Duration) *string {
 	got := []rune{}
 	select {
@@ -43,6 +48,7 @@ func (ctx *Context) Receive(count int, timeout time.Duration) *string {
 	return &r
 }
 
+// ResolveValue looks up a dynamic value in the context's state machine with namspaces and key.
 func (ctx *Context) ResolveValue(namespace flow.ModuleParameterNamespace, key string) interface{} {
 	switch namespace {
 	case flow.NamespaceUserDefined:
@@ -55,11 +61,13 @@ func (ctx *Context) ResolveValue(namespace flow.ModuleParameterNamespace, key st
 	return nil
 }
 
+// KeyValue represents the parsed value of key-value parameter.
 type KeyValue struct {
 	K string
 	V string
 }
 
+// ResolveParameter takes a raw module parameter and looks up its value (whether static or dynamic).
 func (ctx *Context) ResolveParameter(p flow.ModuleParameter) interface{} {
 	var val interface{}
 	if p.Namespace == nil || *p.Namespace == "" {
@@ -80,6 +88,10 @@ func (ctx *Context) ResolveParameter(p flow.ModuleParameter) interface{} {
 	return val
 }
 
+// UnmarshalParameters takes the list of a block's parameters and unmarshals it into a typed struct.
+// The struct field names should match the names of the parameters.
+// Type checking will be performed. If the type of the value cannot be converted to the field type, it errors.
+// Where there are multiple parameters with the same name, use a field with a slice type.
 func (ctx *Context) UnmarshalParameters(plist flow.ModuleParameterList, into interface{}) error {
 	if reflect.ValueOf(into).Kind() != reflect.Ptr || into == nil {
 		return errors.New("second parameter should be non-nil pointer")
@@ -119,10 +131,12 @@ func (ctx *Context) UnmarshalParameters(plist flow.ModuleParameterList, into int
 	return nil
 }
 
+// GetLambda looks up a lambda in the base connect configuration.
 func (ctx *Context) GetLambda(named string) interface{} {
 	return ctx.getLambda(named)
 }
 
+// GetFlowStart looks up the ID of the block that starts the flow with the given name.
 func (ctx *Context) GetFlowStart(flowName string) *flow.ModuleID {
 	return ctx.getFlowStart(flowName)
 }

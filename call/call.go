@@ -2,23 +2,29 @@ package call
 
 import "github.com/edwardbrowncross/amazon-connect-simulator/flow"
 
+// Call is used to interact with an ongoing call.
 type Call struct {
-	O   <-chan string
+	// Output (speaker).
+	O <-chan string
+	// Input (keypad).
 	I   chan<- rune
 	ctx Context
 }
 
+// FlowDescriber allows a call to get information about the flow controlling it.
 type FlowDescriber struct {
 	GetLambda    func(named string) interface{}
 	GetFlowStart func(withName string) *flow.ModuleID
 	GetRunner    func(withID flow.ModuleID) Runner
 }
 
+// Config is data unique to this particular call.
 type Config struct {
 	SourceNumber string
 	DestNumber   string
 }
 
+// New is used by the simulator to create a new call.
 func New(conf Config, fd FlowDescriber, start flow.ModuleID) Call {
 	out := make(chan string)
 	in := make(chan rune)

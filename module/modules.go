@@ -5,6 +5,7 @@ import (
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
+// MakeRunner takes the data of a module (block) and wraps it in a type that provides the functionality of that block.
 func MakeRunner(m flow.Module) call.Runner {
 	switch m.Type {
 	case flow.ModuleStoreUserInput:
