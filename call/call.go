@@ -1,6 +1,9 @@
 package call
 
-import "github.com/edwardbrowncross/amazon-connect-simulator/flow"
+import (
+	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
+	"github.com/edwardbrowncross/amazon-connect-simulator/module"
+)
 
 // Call is used to interact with an ongoing call.
 type Call struct {
@@ -15,7 +18,7 @@ type Call struct {
 type FlowDescriber struct {
 	GetLambda    func(named string) interface{}
 	GetFlowStart func(withName string) *flow.ModuleID
-	GetRunner    func(withID flow.ModuleID) Runner
+	GetRunner    func(withID flow.ModuleID) module.Runner
 }
 
 // Config is data unique to this particular call.
@@ -33,7 +36,7 @@ func New(conf Config, fd FlowDescriber, start flow.ModuleID) Call {
 		i:            in,
 		External:     map[string]string{},
 		ContactData:  map[string]string{},
-		System:       map[flow.SystemKey]string{},
+		System:       map[string]string{},
 		getLambda:    fd.GetLambda,
 		getFlowStart: fd.GetFlowStart,
 		getRunner:    fd.GetRunner,

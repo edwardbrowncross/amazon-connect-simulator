@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/edwardbrowncross/amazon-connect-simulator/call"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -49,15 +48,15 @@ type invokeExternalResource flow.Module
 type invokeExternalResourceParams struct {
 	TimeLimit   string
 	FunctionArn string
-	Parameter   []call.KeyValue
+	Parameter   []flow.KeyValue
 }
 
-func (m invokeExternalResource) Run(ctx *call.Context) (next *flow.ModuleID, err error) {
+func (m invokeExternalResource) Run(ctx CallContext) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleInvokeExternalResource {
 		return nil, fmt.Errorf("module of type %s being run as invokeExternalResource", m.Type)
 	}
 	p := invokeExternalResourceParams{}
-	err = ctx.UnmarshalParameters(m.Parameters, &p)
+	err = parameterResolver{ctx}.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
@@ -88,9 +87,9 @@ func (m invokeExternalResource) Run(ctx *call.Context) (next *flow.ModuleID, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal json from lambda: %s", jsonOut)
 	}
-	ctx.External = map[string]string{}
+	ctx.ClearExternal()
 	for k, v := range out {
-		ctx.External[k] = fmt.Sprintf("%v", v)
+		ctx.SetExternal(k, v)
 	}
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }

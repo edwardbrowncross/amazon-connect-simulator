@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edwardbrowncross/amazon-connect-simulator/call"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -17,12 +16,12 @@ type storeUserInputParams struct {
 	MaxDigits int
 }
 
-func (m storeUserInput) Run(ctx *call.Context) (next *flow.ModuleID, err error) {
+func (m storeUserInput) Run(ctx CallContext) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleStoreUserInput {
 		return nil, fmt.Errorf("module of type %s being run as storeUserInput", m.Type)
 	}
 	p := storeUserInputParams{}
-	err = ctx.UnmarshalParameters(m.Parameters, &p)
+	err = parameterResolver{ctx}.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
@@ -36,7 +35,7 @@ func (m storeUserInput) Run(ctx *call.Context) (next *flow.ModuleID, err error) 
 		next = m.Branches.GetLink(flow.BranchError)
 		return
 	}
-	ctx.System[flow.SystemLastUserInput] = *entry
+	ctx.SetSystem(string(flow.SystemLastUserInput), *entry)
 	next = m.Branches.GetLink(flow.BranchSuccess)
 	return
 }

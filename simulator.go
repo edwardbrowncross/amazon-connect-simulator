@@ -107,7 +107,7 @@ func (cs *CallSimulator) getFlowStart(flowName string) *flow.ModuleID {
 	return &f.Start
 }
 
-func (cs *CallSimulator) getRunner(moduleID flow.ModuleID) call.Runner {
+func (cs *CallSimulator) getRunner(moduleID flow.ModuleID) module.Runner {
 	m, ok := cs.modules[moduleID]
 	if !ok {
 		return nil

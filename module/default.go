@@ -1,12 +1,11 @@
 package module
 
 import (
-	"github.com/edwardbrowncross/amazon-connect-simulator/call"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
 type passthrough flow.Module
 
-func (m passthrough) Run(ctx *call.Context) (next *flow.ModuleID, err error) {
+func (m passthrough) Run(ctx CallContext) (next *flow.ModuleID, err error) {
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }

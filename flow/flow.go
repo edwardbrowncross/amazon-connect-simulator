@@ -179,3 +179,9 @@ type ModuleParameter struct {
 // ModuleMetadata holds metadata about a block.
 type ModuleMetadata struct {
 }
+
+// KeyValue represents the parsed value of key-value parameter.
+type KeyValue struct {
+	K string
+	V string
+}
