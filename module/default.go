@@ -6,6 +6,6 @@ import (
 
 type passthrough flow.Module
 
-func (m passthrough) Run(ctx CallContext) (next *flow.ModuleID, err error) {
+func (m passthrough) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }

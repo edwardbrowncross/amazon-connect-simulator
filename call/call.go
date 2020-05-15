@@ -10,15 +10,15 @@ type Call struct {
 	// Output (speaker).
 	O <-chan string
 	// Input (keypad).
-	I   chan<- rune
-	ctx Context
+	I     chan<- rune
+	state State
 }
 
-// FlowDescriber allows a call to get information about the flow controlling it.
-type FlowDescriber struct {
-	GetLambda    func(named string) interface{}
-	GetFlowStart func(withName string) *flow.ModuleID
-	GetRunner    func(withID flow.ModuleID) module.Runner
+// SimulatorConnector allows a call to get information about the conneect instance it is part off.
+type SimulatorConnector interface {
+	GetLambda(named string) interface{}
+	GetFlowStart(withName string) *flow.ModuleID
+	GetRunner(withID flow.ModuleID) module.Runner
 }
 
 // Config is data unique to this particular call.
@@ -28,23 +28,21 @@ type Config struct {
 }
 
 // New is used by the simulator to create a new call.
-func New(conf Config, fd FlowDescriber, start flow.ModuleID) Call {
+func New(conf Config, fd SimulatorConnector, start flow.ModuleID) Call {
 	out := make(chan string)
 	in := make(chan rune)
-	ctx := Context{
-		o:            out,
-		i:            in,
-		External:     map[string]string{},
-		ContactData:  map[string]string{},
-		System:       map[string]string{},
-		getLambda:    fd.GetLambda,
-		getFlowStart: fd.GetFlowStart,
-		getRunner:    fd.GetRunner,
+	state := State{
+		SimulatorConnector: fd,
+		o:                  out,
+		i:                  in,
+		External:           map[string]string{},
+		ContactData:        map[string]string{},
+		System:             map[string]string{},
 	}
 	c := Call{
-		O:   out,
-		I:   in,
-		ctx: ctx,
+		O:     out,
+		I:     in,
+		state: state,
 	}
 	go c.run(start)
 	return c
@@ -55,7 +53,7 @@ func (c *Call) run(start flow.ModuleID) {
 	var err error
 	next = &start
 	for next != nil && err == nil {
-		m := c.ctx.getRunner(*next)
-		next, err = m.Run(&c.ctx)
+		m := c.state.getRunner(*next)
+		next, err = m.Run(&c.state)
 	}
 }

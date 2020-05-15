@@ -23,7 +23,7 @@ func TestCheckHoursOfOperation(t *testing.T) {
 	testCases := []struct {
 		desc    string
 		module  string
-		context CallContext
+		context CallConnector
 		exp     string
 		expErr  string
 	}{
@@ -45,7 +45,7 @@ func TestCheckHoursOfOperation(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			next, err := mod.Run(testContext{}.init())
+			next, err := mod.Run(testCallState{}.init())
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()

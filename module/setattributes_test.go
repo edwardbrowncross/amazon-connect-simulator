@@ -28,7 +28,7 @@ func TestSetAttributes(t *testing.T) {
 	testCases := []struct {
 		desc    string
 		module  string
-		ctx     *testContext
+		state   *testCallState
 		exp     string
 		expErr  string
 		expAttr map[string]string
@@ -46,7 +46,7 @@ func TestSetAttributes(t *testing.T) {
 		{
 			desc:   "success",
 			module: jsonOK,
-			ctx: testContext{
+			state: testCallState{
 				external: map[string]string{
 					"securityPassed": "yes",
 				},
@@ -64,11 +64,11 @@ func TestSetAttributes(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			ctx := tC.ctx
-			if ctx == nil {
-				ctx = testContext{}.init()
+			state := tC.state
+			if state == nil {
+				state = testCallState{}.init()
 			}
-			next, err := mod.Run(ctx)
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -83,8 +83,8 @@ func TestSetAttributes(t *testing.T) {
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%s'", tC.exp, nextStr)
 			}
-			if tC.expAttr != nil && !reflect.DeepEqual(ctx.contactData, tC.expAttr) {
-				t.Errorf("expected contact data of '%s' but got '%s'", tC.expAttr, ctx.contactData)
+			if tC.expAttr != nil && !reflect.DeepEqual(state.contactData, tC.expAttr) {
+				t.Errorf("expected contact data of '%s' but got '%s'", tC.expAttr, state.contactData)
 			}
 		})
 	}

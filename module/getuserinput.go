@@ -16,19 +16,19 @@ type getUserInputParams struct {
 	MaxDigits string
 }
 
-func (m getUserInput) Run(ctx CallContext) (next *flow.ModuleID, err error) {
+func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleGetUserInput {
 		return nil, fmt.Errorf("module of type %s being run as getUserInput", m.Type)
 	}
 	p := getUserInputParams{}
-	err = parameterResolver{ctx}.unmarshal(m.Parameters, &p)
+	err = parameterResolver{call}.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
 	if p.Text == "" {
 		return m.Branches.GetLink(flow.BranchError), nil
 	}
-	ctx.Send(p.Text)
+	call.Send(p.Text)
 	md, err := strconv.Atoi(p.MaxDigits)
 	if err != nil {
 		return nil, fmt.Errorf("invalid MaxDigits: %s", p.MaxDigits)
@@ -37,7 +37,7 @@ func (m getUserInput) Run(ctx CallContext) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid Timeout: %s", p.Timeout)
 	}
-	in := ctx.Receive(md, time.Duration(tm)*time.Second)
+	in := call.Receive(md, time.Duration(tm)*time.Second)
 	if in == nil {
 		return m.Branches.GetLink(flow.BranchTimeout), nil
 	}

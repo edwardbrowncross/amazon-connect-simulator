@@ -56,35 +56,35 @@ func TestCheckAttribute(t *testing.T) {
 	testCases := []struct {
 		desc    string
 		module  string
-		context CallContext
+		context CallConnector
 		exp     string
 		expErr  string
 	}{
 		{
 			desc:    "wrong module",
 			module:  jsonBadMod,
-			context: testContext{}.init(),
+			context: testCallState{}.init(),
 			exp:     "",
 			expErr:  "module of type Disconnect being run as checkAttribute",
 		},
 		{
 			desc:    "bad parameters",
 			module:  jsonBadParams,
-			context: testContext{}.init(),
+			context: testCallState{}.init(),
 			exp:     "",
 			expErr:  "missing parameter Namespace",
 		},
 		{
 			desc:    "unknown condition",
 			module:  jsonBadCondition,
-			context: testContext{}.init(),
+			context: testCallState{}.init(),
 			exp:     "",
 			expErr:  "unhandled condition type: StartsWith",
 		},
 		{
 			desc:   "numeric comparison match",
 			module: jsonNum,
-			context: testContext{
+			context: testCallState{
 				external: map[string]string{
 					"securityAttempts": "3",
 				},
@@ -94,7 +94,7 @@ func TestCheckAttribute(t *testing.T) {
 		{
 			desc:   "numeric comparison no match",
 			module: jsonNum,
-			context: testContext{
+			context: testCallState{
 				external: map[string]string{
 					"securityAttempts": "10",
 				},
@@ -104,7 +104,7 @@ func TestCheckAttribute(t *testing.T) {
 		{
 			desc:   "string comparison match",
 			module: jsonString,
-			context: testContext{
+			context: testCallState{
 				system: map[string]string{
 					flow.SystemQueueName: "complaints",
 				},
@@ -114,7 +114,7 @@ func TestCheckAttribute(t *testing.T) {
 		{
 			desc:   "string comparison no match",
 			module: jsonString,
-			context: testContext{
+			context: testCallState{
 				system: map[string]string{
 					flow.SystemQueueName: "sales",
 				},

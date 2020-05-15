@@ -12,17 +12,17 @@ type setAttributesParams struct {
 	Attribute []flow.KeyValue
 }
 
-func (m setAttributes) Run(ctx CallContext) (next *flow.ModuleID, err error) {
+func (m setAttributes) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleSetAttributes {
 		return nil, fmt.Errorf("module of type %s being run as setAttributes", m.Type)
 	}
 	p := setAttributesParams{}
-	err = parameterResolver{ctx}.unmarshal(m.Parameters, &p)
+	err = parameterResolver{call}.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
 	for _, a := range p.Attribute {
-		ctx.SetContactData(a.K, a.V)
+		call.SetContactData(a.K, a.V)
 	}
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }

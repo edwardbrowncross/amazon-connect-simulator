@@ -48,7 +48,7 @@ func TestStoreUserInput(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		module        string
-		ctx           *testContext
+		state         *testCallState
 		exp           string
 		expPrompt     string
 		expErr        string
@@ -74,7 +74,7 @@ func TestStoreUserInput(t *testing.T) {
 		{
 			desc:   "timeout",
 			module: jsonOK,
-			ctx: testContext{
+			state: testCallState{
 				i: "",
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000002",
@@ -83,7 +83,7 @@ func TestStoreUserInput(t *testing.T) {
 			desc:   "success",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000001",
-			ctx: testContext{
+			state: testCallState{
 				i: "12345678",
 				external: map[string]string{
 					"prompt": "Please enter your account number.",
@@ -104,11 +104,11 @@ func TestStoreUserInput(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			ctx := tC.ctx
-			if ctx == nil {
-				ctx = testContext{}.init()
+			state := tC.state
+			if state == nil {
+				state = testCallState{}.init()
 			}
-			next, err := mod.Run(ctx)
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -124,18 +124,18 @@ func TestStoreUserInput(t *testing.T) {
 				t.Errorf("expected next of '%s' but got '%s'", tC.exp, nextStr)
 			}
 			for k, v := range tC.expSys {
-				if ctx.system[k] != v {
-					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, ctx.system[k])
+				if state.system[k] != v {
+					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, state.system[k])
 				}
 			}
-			if ctx.o != tC.expPrompt {
-				t.Errorf("expected prompt of '%s' but got '%s'", tC.expPrompt, ctx.o)
+			if state.o != tC.expPrompt {
+				t.Errorf("expected prompt of '%s' but got '%s'", tC.expPrompt, state.o)
 			}
-			if tC.expRcvCount > 0 && ctx.rcv.count != tC.expRcvCount {
-				t.Errorf("expected receive count of %d but got %d", ctx.rcv.count, tC.expRcvCount)
+			if tC.expRcvCount > 0 && state.rcv.count != tC.expRcvCount {
+				t.Errorf("expected receive count of %d but got %d", state.rcv.count, tC.expRcvCount)
 			}
-			if tC.expRcvTimeout > 0 && ctx.rcv.timeout != tC.expRcvTimeout {
-				t.Errorf("expected receive timeout of %d but got %d", ctx.rcv.timeout, tC.expRcvTimeout)
+			if tC.expRcvTimeout > 0 && state.rcv.timeout != tC.expRcvTimeout {
+				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
 			}
 		})
 	}

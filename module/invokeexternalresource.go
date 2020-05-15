@@ -52,7 +52,7 @@ type invokeExternalResourceParams struct {
 	Parameter   []flow.KeyValue
 }
 
-func (m invokeExternalResource) Run(ctx CallContext) (next *flow.ModuleID, err error) {
+func (m invokeExternalResource) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleInvokeExternalResource {
 		return nil, fmt.Errorf("module of type %s being run as invokeExternalResource", m.Type)
 	}
@@ -60,11 +60,11 @@ func (m invokeExternalResource) Run(ctx CallContext) (next *flow.ModuleID, err e
 		return nil, fmt.Errorf("unknown target: %s", m.Target)
 	}
 	p := invokeExternalResourceParams{}
-	err = parameterResolver{ctx}.unmarshal(m.Parameters, &p)
+	err = parameterResolver{call}.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
-	fn := ctx.GetLambda(p.FunctionArn)
+	fn := call.GetLambda(p.FunctionArn)
 	if fn == nil {
 		return m.Branches.GetLink(flow.BranchError), nil
 	}
@@ -94,9 +94,9 @@ func (m invokeExternalResource) Run(ctx CallContext) (next *flow.ModuleID, err e
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal json from lambda: %s", jsonOut)
 	}
-	ctx.ClearExternal()
+	call.ClearExternal()
 	for k, v := range out {
-		ctx.SetExternal(k, v)
+		call.SetExternal(k, v)
 	}
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }

@@ -33,7 +33,7 @@ func TestPassthrough(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			next, err := mod.Run(testContext{}.init())
+			next, err := mod.Run(testCallState{}.init())
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()

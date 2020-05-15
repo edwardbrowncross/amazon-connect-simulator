@@ -43,7 +43,7 @@ func TestGetUserInput(t *testing.T) {
 		desc          string
 		module        string
 		entry         string
-		ctx           *testContext
+		state         *testCallState
 		exp           string
 		expErr        string
 		expPrompt     string
@@ -64,7 +64,7 @@ func TestGetUserInput(t *testing.T) {
 			desc:   "parameter reference missing",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000005",
-			ctx: testContext{
+			state: testCallState{
 				external: map[string]string{
 					"speakme": "<speak>Enter a number</speak>",
 				},
@@ -76,7 +76,7 @@ func TestGetUserInput(t *testing.T) {
 			module: jsonOK,
 			entry:  "2",
 			exp:    "00000000-0000-4000-0000-000000000002",
-			ctx: testContext{
+			state: testCallState{
 				external: map[string]string{
 					"prompt": "<speak>Enter a number</speak>",
 				},
@@ -90,7 +90,7 @@ func TestGetUserInput(t *testing.T) {
 			module: jsonOK,
 			entry:  "3",
 			exp:    "00000000-0000-4000-0000-000000000004",
-			ctx: testContext{
+			state: testCallState{
 				external: map[string]string{
 					"prompt": "<speak>Enter a number</speak>",
 				},
@@ -103,7 +103,7 @@ func TestGetUserInput(t *testing.T) {
 			desc:   "timeout",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000003",
-			ctx: testContext{
+			state: testCallState{
 				external: map[string]string{
 					"prompt": "<speak>Enter a number</speak>",
 				},
@@ -120,12 +120,12 @@ func TestGetUserInput(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			ctx := tC.ctx
-			if ctx == nil {
-				ctx = testContext{}.init()
+			state := tC.state
+			if state == nil {
+				state = testCallState{}.init()
 			}
-			ctx.i = tC.entry
-			next, err := mod.Run(ctx)
+			state.i = tC.entry
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -140,14 +140,14 @@ func TestGetUserInput(t *testing.T) {
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%v'", tC.exp, *next)
 			}
-			if ctx.o != tC.expPrompt {
-				t.Errorf("expected prompt of '%s' but got '%s'", tC.expPrompt, ctx.o)
+			if state.o != tC.expPrompt {
+				t.Errorf("expected prompt of '%s' but got '%s'", tC.expPrompt, state.o)
 			}
-			if ctx.rcv.count != tC.expRcvCount {
-				t.Errorf("expected receive count of %d but got %d", ctx.rcv.count, tC.expRcvCount)
+			if state.rcv.count != tC.expRcvCount {
+				t.Errorf("expected receive count of %d but got %d", state.rcv.count, tC.expRcvCount)
 			}
-			if ctx.rcv.timeout != tC.expRcvTimeout {
-				t.Errorf("expected receive timeout of %d but got %d", ctx.rcv.timeout, tC.expRcvTimeout)
+			if state.rcv.timeout != tC.expRcvTimeout {
+				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
 			}
 		})
 	}

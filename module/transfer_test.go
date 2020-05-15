@@ -50,7 +50,7 @@ func TestTransfer(t *testing.T) {
 	testCases := []struct {
 		desc   string
 		module string
-		ctx    *testContext
+		state  *testCallState
 		exp    string
 		expErr string
 		expSys map[string]string
@@ -73,7 +73,7 @@ func TestTransfer(t *testing.T) {
 		{
 			desc:   "success - flow",
 			module: jsonFlowOK,
-			ctx: testContext{
+			state: testCallState{
 				flowStart: map[string]flow.ModuleID{
 					"Security": "00000000-0000-4000-0000-000000000001",
 				},
@@ -83,7 +83,7 @@ func TestTransfer(t *testing.T) {
 		{
 			desc:   "success - queue",
 			module: jsonQueueOK,
-			ctx: testContext{
+			state: testCallState{
 				system: map[string]string{
 					flow.SystemQueueName: "complaints",
 				},
@@ -98,11 +98,11 @@ func TestTransfer(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			ctx := tC.ctx
-			if ctx == nil {
-				ctx = testContext{}.init()
+			state := tC.state
+			if state == nil {
+				state = testCallState{}.init()
 			}
-			next, err := mod.Run(ctx)
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -118,8 +118,8 @@ func TestTransfer(t *testing.T) {
 				t.Errorf("expected next of '%s' but got '%s'", tC.exp, nextStr)
 			}
 			for k, v := range tC.expSys {
-				if ctx.system[k] != v {
-					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, ctx.system[k])
+				if state.system[k] != v {
+					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, state.system[k])
 				}
 			}
 		})

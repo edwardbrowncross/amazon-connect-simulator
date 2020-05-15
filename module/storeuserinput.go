@@ -16,26 +16,26 @@ type storeUserInputParams struct {
 	MaxDigits int
 }
 
-func (m storeUserInput) Run(ctx CallContext) (next *flow.ModuleID, err error) {
+func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleStoreUserInput {
 		return nil, fmt.Errorf("module of type %s being run as storeUserInput", m.Type)
 	}
 	p := storeUserInputParams{}
-	err = parameterResolver{ctx}.unmarshal(m.Parameters, &p)
+	err = parameterResolver{call}.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
-	ctx.Send(p.Text)
+	call.Send(p.Text)
 	timeout, err := strconv.Atoi(p.Timeout)
 	if err != nil {
 		return
 	}
-	entry := ctx.Receive(p.MaxDigits, time.Duration(timeout)*time.Second)
+	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second)
 	if entry == nil {
 		next = m.Branches.GetLink(flow.BranchError)
 		return
 	}
-	ctx.SetSystem(string(flow.SystemLastUserInput), *entry)
+	call.SetSystem(string(flow.SystemLastUserInput), *entry)
 	next = m.Branches.GetLink(flow.BranchSuccess)
 	return
 }

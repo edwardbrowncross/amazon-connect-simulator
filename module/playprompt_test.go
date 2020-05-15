@@ -54,8 +54,8 @@ func TestPlayPrompt(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			ctx := testContext{}.init()
-			next, err := mod.Run(ctx)
+			state := testCallState{}.init()
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -70,8 +70,8 @@ func TestPlayPrompt(t *testing.T) {
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%v'", tC.exp, *next)
 			}
-			if ctx.o != tC.expOut {
-				t.Errorf("expected ouptut of '%s' but got '%s'", tC.expOut, ctx.o)
+			if state.o != tC.expOut {
+				t.Errorf("expected ouptut of '%s' but got '%s'", tC.expOut, state.o)
 			}
 		})
 	}

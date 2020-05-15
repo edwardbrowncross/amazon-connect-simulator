@@ -60,8 +60,8 @@ func TestSetQueue(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			ctx := testContext{}.init()
-			next, err := mod.Run(ctx)
+			state := testCallState{}.init()
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -77,8 +77,8 @@ func TestSetQueue(t *testing.T) {
 				t.Errorf("expected next of '%s' but got '%s'", tC.exp, nextStr)
 			}
 			for k, v := range tC.expSys {
-				if ctx.system[k] != v {
-					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, ctx.system[k])
+				if state.system[k] != v {
+					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, state.system[k])
 				}
 			}
 		})

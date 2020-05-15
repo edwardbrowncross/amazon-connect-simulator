@@ -11,7 +11,7 @@ import (
 
 // Runner takes a call context and returns the ID of the next block to run, or nil if the call is over.
 type Runner interface {
-	Run(CallContext) (*flow.ModuleID, error)
+	Run(CallConnector) (*flow.ModuleID, error)
 }
 
 // MakeRunner takes the data of a module (block) and wraps it in a type that provides the functionality of that block.
@@ -42,8 +42,8 @@ func MakeRunner(m flow.Module) Runner {
 	}
 }
 
-// CallContext describes what a module needs to interact with the ongoing call.
-type CallContext interface {
+// CallConnector describes what a module needs to interact with the ongoing call.
+type CallConnector interface {
 	Send(s string)
 	Receive(count int, timeout time.Duration) *string
 	GetExternal(key string) interface{}
@@ -63,27 +63,27 @@ type valueGetter interface {
 	GetSystem(key string) interface{}
 }
 
-// parameterResolver uses the base methods of the CallContext to perform more sophisticated lookup operations.
+// parameterResolver uses the base methods of the CallConnector to perform more sophisticated lookup operations.
 type parameterResolver struct {
 	valueGetter
 }
 
 // get gets a single value by namespace and key.
-func (ctx parameterResolver) get(namespace flow.ModuleParameterNamespace, key string) (interface{}, error) {
+func (call parameterResolver) get(namespace flow.ModuleParameterNamespace, key string) (interface{}, error) {
 	switch namespace {
 	case flow.NamespaceUserDefined:
-		return ctx.GetContactData(key), nil
+		return call.GetContactData(key), nil
 	case flow.NamespaceExternal:
-		return ctx.GetExternal(key), nil
+		return call.GetExternal(key), nil
 	case flow.NamespaceSystem:
-		return ctx.GetSystem(key), nil
+		return call.GetSystem(key), nil
 	default:
 		return nil, fmt.Errorf("unknown namespace: %s", namespace)
 	}
 }
 
 // resolve takes a raw module parameter and looks up its value (whether static or dynamic).
-func (ctx parameterResolver) resolve(p flow.ModuleParameter) (val interface{}, err error) {
+func (call parameterResolver) resolve(p flow.ModuleParameter) (val interface{}, err error) {
 	if p.Namespace == nil || *p.Namespace == "" {
 		val = p.Value
 	} else {
@@ -91,7 +91,7 @@ func (ctx parameterResolver) resolve(p flow.ModuleParameter) (val interface{}, e
 		if !ok {
 			return
 		}
-		val, err = ctx.get(*p.Namespace, key)
+		val, err = call.get(*p.Namespace, key)
 		if err != nil {
 			return
 		}
@@ -110,7 +110,7 @@ func (ctx parameterResolver) resolve(p flow.ModuleParameter) (val interface{}, e
 // The struct field names should match the names of the parameters.
 // Type checking will be performed. If the type of the value cannot be converted to the field type, it errors.
 // Where there are multiple parameters with the same name, use a field with a slice type.
-func (ctx parameterResolver) unmarshal(plist flow.ModuleParameterList, into interface{}) error {
+func (call parameterResolver) unmarshal(plist flow.ModuleParameterList, into interface{}) error {
 	if reflect.ValueOf(into).Kind() != reflect.Ptr || into == nil || reflect.ValueOf(into).IsNil() {
 		return errors.New("second parameter should be non-nil pointer")
 	}
@@ -123,7 +123,7 @@ func (ctx parameterResolver) unmarshal(plist flow.ModuleParameterList, into inte
 			ps := plist.List(f.Name)
 			vals := reflect.MakeSlice(reflect.SliceOf(sliceType), len(ps), len(ps))
 			for j, p := range ps {
-				val, err := ctx.resolve(p)
+				val, err := call.resolve(p)
 				if err != nil {
 					return err
 				}
@@ -141,7 +141,7 @@ func (ctx parameterResolver) unmarshal(plist flow.ModuleParameterList, into inte
 			if p == nil {
 				return fmt.Errorf("missing parameter %s", f.Name)
 			}
-			val, err := ctx.resolve(*p)
+			val, err := call.resolve(*p)
 			if err != nil {
 				return err
 			}

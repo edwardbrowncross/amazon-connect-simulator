@@ -10,7 +10,7 @@ import (
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
-type testContext struct {
+type testCallState struct {
 	i   string
 	o   string
 	rcv struct {
@@ -24,74 +24,74 @@ type testContext struct {
 	flowStart   map[string]flow.ModuleID
 }
 
-func (ctx testContext) init() *testContext {
-	if ctx.external == nil {
-		ctx.external = map[string]string{}
+func (st testCallState) init() *testCallState {
+	if st.external == nil {
+		st.external = map[string]string{}
 	}
-	if ctx.contactData == nil {
-		ctx.contactData = map[string]string{}
+	if st.contactData == nil {
+		st.contactData = map[string]string{}
 	}
-	if ctx.system == nil {
-		ctx.system = map[string]string{}
+	if st.system == nil {
+		st.system = map[string]string{}
 	}
-	if ctx.lambda == nil {
-		ctx.lambda = map[string]interface{}{}
+	if st.lambda == nil {
+		st.lambda = map[string]interface{}{}
 	}
-	if ctx.flowStart == nil {
-		ctx.flowStart = map[string]flow.ModuleID{}
+	if st.flowStart == nil {
+		st.flowStart = map[string]flow.ModuleID{}
 	}
-	return &ctx
+	return &st
 }
 
-func (ctx *testContext) Send(s string) {
-	ctx.o = s
+func (st *testCallState) Send(s string) {
+	st.o = s
 }
-func (ctx *testContext) Receive(count int, timeout time.Duration) *string {
-	ctx.rcv.count = count
-	ctx.rcv.timeout = timeout
-	if ctx.i == "" {
+func (st *testCallState) Receive(count int, timeout time.Duration) *string {
+	st.rcv.count = count
+	st.rcv.timeout = timeout
+	if st.i == "" {
 		return nil
 	}
-	return &ctx.i
+	return &st.i
 }
-func (ctx *testContext) GetExternal(key string) interface{} {
-	val, found := ctx.external[key]
+func (st *testCallState) GetExternal(key string) interface{} {
+	val, found := st.external[key]
 	if !found {
 		return nil
 	}
 	return val
 }
-func (ctx *testContext) SetExternal(key string, value interface{}) {
-	ctx.external[key] = fmt.Sprintf("%v", value)
+func (st *testCallState) SetExternal(key string, value interface{}) {
+	st.external[key] = fmt.Sprintf("%v", value)
 }
-func (ctx *testContext) ClearExternal() {
-	ctx.external = map[string]string{}
+func (st *testCallState) ClearExternal() {
+	st.external = map[string]string{}
 }
-func (ctx *testContext) GetContactData(key string) interface{} {
-	val, found := ctx.contactData[key]
+func (st *testCallState) GetContactData(key string) interface{} {
+	val, found := st.contactData[key]
 	if !found {
 		return nil
 	}
 	return val
 }
-func (ctx *testContext) SetContactData(key string, value interface{}) {
-	ctx.contactData[key] = fmt.Sprintf("%v", value)
+func (st *testCallState) SetContactData(key string, value interface{}) {
+	st.contactData[key] = fmt.Sprintf("%v", value)
 }
-func (ctx *testContext) GetSystem(key string) interface{} {
-	val, found := ctx.system[key]
+func (st *testCallState) GetSystem(key string) interface{} {
+	val, found := st.system[key]
 	if !found {
 		return nil
 	}
 	return val
 }
-func (ctx *testContext) SetSystem(key string, value interface{}) {
-	ctx.system[key] = fmt.Sprintf("%v", value)
+func (st *testCallState) SetSystem(key string, value interface{}) {
+	st.system[key] = fmt.Sprintf("%v", value)
 }
-func (ctx *testContext) GetLambda(named string) interface{} {
-	return ctx.lambda[named]
+func (st *testCallState) GetLambda(named string) interface{} {
+	return st.lambda[named]
 }
-func (ctx *testContext) GetFlowStart(flowName string) *flow.ModuleID {
-	r := ctx.flowStart[flowName]
+func (st *testCallState) GetFlowStart(flowName string) *flow.ModuleID {
+	r := st.flowStart[flowName]
 	return &r
 }
 
@@ -234,7 +234,7 @@ func TestUnmarshalErrors(t *testing.T) {
 			if err := json.Unmarshal([]byte(tC.params), &pl); err != nil {
 				t.Fatalf("unexpected error unmarshalling parameters: %v", err)
 			}
-			pr := parameterResolver{testContext{}.init()}
+			pr := parameterResolver{testCallState{}.init()}
 			err := pr.unmarshal(pl, tC.into)
 			errStr := ""
 			if err != nil {
@@ -268,7 +268,7 @@ func TestUnmarshalOK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error perparing parameters: %v", err)
 	}
-	c := testContext{
+	c := testCallState{
 		external: map[string]string{
 			"testValue2": "foo",
 		},

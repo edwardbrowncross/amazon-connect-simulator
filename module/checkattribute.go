@@ -14,11 +14,11 @@ type checkAttributeParams struct {
 	Attribute string
 }
 
-func (m checkAttribute) Run(ctx CallContext) (next *flow.ModuleID, err error) {
+func (m checkAttribute) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleCheckAttribute {
 		return nil, fmt.Errorf("module of type %s being run as checkAttribute", m.Type)
 	}
-	pr := parameterResolver{ctx}
+	pr := parameterResolver{call}
 	p := checkAttributeParams{}
 	err = pr.unmarshal(m.Parameters, &p)
 	if err != nil {

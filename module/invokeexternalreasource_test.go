@@ -78,7 +78,7 @@ func TestInvokeExternalResource(t *testing.T) {
 	testCases := []struct {
 		desc        string
 		module      string
-		ctx         *testContext
+		state       *testCallState
 		exp         string
 		expErr      string
 		expExternal map[string]string
@@ -101,7 +101,7 @@ func TestInvokeExternalResource(t *testing.T) {
 		{
 			desc:   "missing lambda",
 			module: jsonOK,
-			ctx: testContext{
+			state: testCallState{
 				lambda: map[string]interface{}{
 					"arn:aws:lambda:eu-west-2:456789012345:function:a-different-lambda": func() {},
 				},
@@ -112,7 +112,7 @@ func TestInvokeExternalResource(t *testing.T) {
 		{
 			desc:   "bad lambda signature",
 			module: jsonOKNoParams,
-			ctx: testContext{
+			state: testCallState{
 				lambda: map[string]interface{}{
 					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(string) error {
 						return nil
@@ -125,7 +125,7 @@ func TestInvokeExternalResource(t *testing.T) {
 		{
 			desc:   "lambda error",
 			module: jsonOKNoParams,
-			ctx: testContext{
+			state: testCallState{
 				lambda: map[string]interface{}{
 					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(c context.Context, evt lambdaPayload) (out testLambdaOutput, err error) {
 						return out, errors.New("something went wrong")
@@ -138,7 +138,7 @@ func TestInvokeExternalResource(t *testing.T) {
 		{
 			desc:   "success",
 			module: jsonOK,
-			ctx: testContext{
+			state: testCallState{
 				system: map[string]string{
 					string(flow.SystemLastUserInput): "12345",
 				},
@@ -176,11 +176,11 @@ func TestInvokeExternalResource(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			ctx := tC.ctx
-			if ctx == nil {
-				ctx = testContext{}.init()
+			state := tC.state
+			if state == nil {
+				state = testCallState{}.init()
 			}
-			next, err := mod.Run(ctx)
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -195,8 +195,8 @@ func TestInvokeExternalResource(t *testing.T) {
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%v'", tC.exp, *next)
 			}
-			if tC.expExternal != nil && !reflect.DeepEqual(tC.expExternal, ctx.external) {
-				t.Errorf("expected external to be:\n%v\nbut it was \n%v", tC.expExternal, ctx.external)
+			if tC.expExternal != nil && !reflect.DeepEqual(tC.expExternal, state.external) {
+				t.Errorf("expected external to be:\n%v\nbut it was \n%v", tC.expExternal, state.external)
 			}
 		})
 	}
@@ -211,7 +211,7 @@ func TestValidateLambda(t *testing.T) {
 	}{
 		{
 			desc: "not a function",
-			fn:   testContext{}.init(),
+			fn:   testCallState{}.init(),
 			exp:  "wanted function but got ptr",
 		},
 		{
