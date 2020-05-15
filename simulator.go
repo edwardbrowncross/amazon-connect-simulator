@@ -80,14 +80,15 @@ func (cs *CallSimulator) StartCall(config call.Config) (call.Call, error) {
 	if cs.startingFlow == nil {
 		return call.Call{}, errors.New("no starting flow set. Call SetStartingFlow before starting a call")
 	}
-	return call.New(config, call.FlowDescriber{
-		GetLambda:    cs.lookupLambda,
-		GetFlowStart: cs.getFlowStart,
-		GetRunner:    cs.getRunner,
-	}, *&cs.startingFlow.Start), nil
+	return call.New(config, &simulatorState{cs}, *&cs.startingFlow.Start), nil
 }
 
-func (cs *CallSimulator) lookupLambda(arn string) interface{} {
+type simulatorState struct {
+	*CallSimulator
+}
+
+// GetLambda gets a lamda using a partial ARN match.
+func (cs *simulatorState) GetLambda(arn string) interface{} {
 	for k, v := range cs.lambdas {
 		if strings.Contains(arn, k) {
 			return v
@@ -96,7 +97,8 @@ func (cs *CallSimulator) lookupLambda(arn string) interface{} {
 	return nil
 }
 
-func (cs *CallSimulator) getFlowStart(flowName string) *flow.ModuleID {
+// GetFlowStart gets the module ID of the block at the start of a flow with the given name.
+func (cs *simulatorState) GetFlowStart(flowName string) *flow.ModuleID {
 	f, ok := cs.flows[flowName]
 	if !ok {
 		return nil
@@ -104,7 +106,8 @@ func (cs *CallSimulator) getFlowStart(flowName string) *flow.ModuleID {
 	return &f.Start
 }
 
-func (cs *CallSimulator) getRunner(moduleID flow.ModuleID) module.Runner {
+// GetRunner finds the block with the given ID and wraps in the module providing its functionality.
+func (cs *simulatorState) GetRunner(moduleID flow.ModuleID) module.Runner {
 	m, ok := cs.modules[moduleID]
 	if !ok {
 		return nil

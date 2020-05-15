@@ -53,7 +53,7 @@ func (c *Call) run(start flow.ModuleID) {
 	var err error
 	next = &start
 	for next != nil && err == nil {
-		m := c.state.getRunner(*next)
+		m := c.state.GetRunner(*next)
 		next, err = m.Run(&c.state)
 	}
 }
