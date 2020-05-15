@@ -52,13 +52,14 @@ const (
 
 // Known named reasons for choosing an output of a block.
 const (
-	BranchSuccess  ModuleBranchCondition = "Success"
-	BranchError                          = "Error"
-	BranchNoMatch                        = "NoMatch"
-	BranchEvaluate                       = "Evaluate"
-	BranchTimeout                        = "Timeout"
-	BranchTrue                           = "True"
-	BranchFalse                          = "False"
+	BranchSuccess    ModuleBranchCondition = "Success"
+	BranchError                            = "Error"
+	BranchNoMatch                          = "NoMatch"
+	BranchEvaluate                         = "Evaluate"
+	BranchTimeout                          = "Timeout"
+	BranchTrue                             = "True"
+	BranchFalse                            = "False"
+	BranchAtCapacity                       = "AtCapacity"
 )
 
 // Operators for Evaluate branches.

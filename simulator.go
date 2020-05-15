@@ -1,11 +1,8 @@
 package simulator
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/call"
@@ -57,7 +54,7 @@ func (cs *CallSimulator) LoadFlowJSON(bytes []byte) error {
 // fn is function like handle(context.Context, struct) (struct, error). It will be passed an Amazon Connect lambda event.
 // You must specify a function for each external lambda invocation before starting a simulated call.
 func (cs *CallSimulator) RegisterLambda(name string, fn interface{}) error {
-	err := validateLambda(fn)
+	err := module.ValidateLambda(fn)
 	if err != nil {
 		return err
 	}
@@ -113,32 +110,4 @@ func (cs *CallSimulator) getRunner(moduleID flow.ModuleID) module.Runner {
 		return nil
 	}
 	return module.MakeRunner(m)
-}
-
-func validateLambda(fn interface{}) error {
-	fnt := reflect.TypeOf(fn)
-	if fnt.Kind() != reflect.Func {
-		return fmt.Errorf("wanted function but got %s", fnt.Kind())
-	}
-	if fnt.NumIn() != 2 {
-		return fmt.Errorf("expected function to take 2 parameters but it takes %d", fnt.NumIn())
-	}
-	contextt := reflect.TypeOf((*context.Context)(nil)).Elem()
-	if !fnt.In(0).Implements(contextt) {
-		return errors.New("expected first argument to be a context.Context")
-	}
-	if fnt.In(1).Kind() != reflect.Struct {
-		return fmt.Errorf("expected second argument to be struct but it was %s", fnt.In(1).Kind())
-	}
-	if fnt.NumOut() != 2 {
-		return fmt.Errorf("expected function to return 2 elements but it returns %d", fnt.NumOut())
-	}
-	if fnt.Out(0).Kind() != reflect.Struct {
-		return fmt.Errorf("expected first return to be struct but it was %s", fnt.Out(0).Kind())
-	}
-	errort := reflect.TypeOf((*error)(nil)).Elem()
-	if !fnt.Out(1).Implements(errort) {
-		return errors.New("expected seclnd return to be an error")
-	}
-	return nil
 }

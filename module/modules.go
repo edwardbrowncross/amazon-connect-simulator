@@ -42,7 +42,7 @@ func MakeRunner(m flow.Module) Runner {
 	}
 }
 
-// CallContext is
+// CallContext describes what a module needs to interact with the ongoing call.
 type CallContext interface {
 	Send(s string)
 	Receive(count int, timeout time.Duration) *string
@@ -57,9 +57,15 @@ type CallContext interface {
 	GetFlowStart(flowName string) *flow.ModuleID
 }
 
+type valueGetter interface {
+	GetExternal(key string) interface{}
+	GetContactData(key string) interface{}
+	GetSystem(key string) interface{}
+}
+
 // parameterResolver uses the base methods of the CallContext to perform more sophisticated lookup operations.
 type parameterResolver struct {
-	CallContext
+	valueGetter
 }
 
 // get gets a single value by namespace and key.
@@ -105,7 +111,7 @@ func (ctx parameterResolver) resolve(p flow.ModuleParameter) (val interface{}, e
 // Type checking will be performed. If the type of the value cannot be converted to the field type, it errors.
 // Where there are multiple parameters with the same name, use a field with a slice type.
 func (ctx parameterResolver) unmarshal(plist flow.ModuleParameterList, into interface{}) error {
-	if reflect.ValueOf(into).Kind() != reflect.Ptr || into == nil {
+	if reflect.ValueOf(into).Kind() != reflect.Ptr || into == nil || reflect.ValueOf(into).IsNil() {
 		return errors.New("second parameter should be non-nil pointer")
 	}
 	intov := reflect.ValueOf(into).Elem()
@@ -120,6 +126,9 @@ func (ctx parameterResolver) unmarshal(plist flow.ModuleParameterList, into inte
 				val, err := ctx.resolve(p)
 				if err != nil {
 					return err
+				}
+				if val == nil {
+					continue
 				}
 				if !reflect.TypeOf(val).ConvertibleTo(sliceType) {
 					return fmt.Errorf("type mismatch in field %s. Cannot convert %s to %s", f.Name, reflect.TypeOf(val), sliceType)

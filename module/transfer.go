@@ -1,6 +1,7 @@
 package module
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
@@ -14,13 +15,13 @@ func (m transfer) Run(ctx CallContext) (next *flow.ModuleID, err error) {
 	}
 	switch m.Target {
 	case flow.TargetFlow:
-		fName := m.Parameters.Get("ContactFlowId").ResourceName
-		return ctx.GetFlowStart(fName), nil
-	case flow.TargetQueue:
-		queue, err := parameterResolver{ctx}.get(flow.NamespaceSystem, flow.SystemQueueName)
-		if err != nil {
-			return nil, err
+		cfid := m.Parameters.Get("ContactFlowId")
+		if cfid == nil {
+			return nil, errors.New("missing ContextFlowId parameter")
 		}
+		return ctx.GetFlowStart(cfid.ResourceName), nil
+	case flow.TargetQueue:
+		queue := ctx.GetSystem(string(flow.SystemQueueName))
 		ctx.Send(fmt.Sprintf("<transfer to queue %s>", queue))
 		return nil, nil
 	default:

@@ -59,17 +59,29 @@ func (ctx *Context) SetSystem(key string, value interface{}) {
 
 // GetExternal gets a value from the context's state machine.
 func (ctx *Context) GetExternal(key string) interface{} {
-	return ctx.External[key]
+	val, found := ctx.External[key]
+	if !found {
+		return nil
+	}
+	return val
 }
 
 // GetContactData gets a value from the context's state machine.
 func (ctx *Context) GetContactData(key string) interface{} {
-	return ctx.ContactData[key]
+	val, found := ctx.ContactData[key]
+	if !found {
+		return nil
+	}
+	return val
 }
 
 // GetSystem gets a value from the context's state machine.
 func (ctx *Context) GetSystem(key string) interface{} {
-	return ctx.System[key]
+	val, found := ctx.System[key]
+	if !found {
+		return nil
+	}
+	return val
 }
 
 // ClearExternal allows clearing of all externalvalues in the state machine.

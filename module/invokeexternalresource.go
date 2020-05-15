@@ -3,6 +3,7 @@ package module
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -55,6 +56,9 @@ func (m invokeExternalResource) Run(ctx CallContext) (next *flow.ModuleID, err e
 	if m.Type != flow.ModuleInvokeExternalResource {
 		return nil, fmt.Errorf("module of type %s being run as invokeExternalResource", m.Type)
 	}
+	if m.Target != flow.TargetLambda {
+		return nil, fmt.Errorf("unknown target: %s", m.Target)
+	}
 	p := invokeExternalResourceParams{}
 	err = parameterResolver{ctx}.unmarshal(m.Parameters, &p)
 	if err != nil {
@@ -62,7 +66,10 @@ func (m invokeExternalResource) Run(ctx CallContext) (next *flow.ModuleID, err e
 	}
 	fn := ctx.GetLambda(p.FunctionArn)
 	if fn == nil {
-		return nil, fmt.Errorf("no function found for lambda %s", p.FunctionArn)
+		return m.Branches.GetLink(flow.BranchError), nil
+	}
+	if ValidateLambda(fn) != nil {
+		return m.Branches.GetLink(flow.BranchError), nil
 	}
 	fields := make([]string, len(p.Parameter))
 	for i, p := range p.Parameter {
@@ -115,4 +122,33 @@ func (m invokeExternalResource) invoke(fn interface{}, withJSON string) (outJSON
 	}
 	outJSON = string(out)
 	return
+}
+
+// ValidateLambda checks that a function has the signature required for execution by an invokeExternalResource block.
+func ValidateLambda(fn interface{}) error {
+	fnt := reflect.TypeOf(fn)
+	if fnt.Kind() != reflect.Func {
+		return fmt.Errorf("wanted function but got %s", fnt.Kind())
+	}
+	if fnt.NumIn() != 2 {
+		return fmt.Errorf("expected function to take 2 parameters but it takes %d", fnt.NumIn())
+	}
+	contextt := reflect.TypeOf((*context.Context)(nil)).Elem()
+	if !fnt.In(0).Implements(contextt) {
+		return errors.New("expected first argument to be a context.Context")
+	}
+	if fnt.In(1).Kind() != reflect.Struct {
+		return fmt.Errorf("expected second argument to be struct but it was: %s", fnt.In(1).Kind())
+	}
+	if fnt.NumOut() != 2 {
+		return fmt.Errorf("expected function to return 2 elements but it returns %d", fnt.NumOut())
+	}
+	if fnt.Out(0).Kind() != reflect.Struct {
+		return fmt.Errorf("expected first return to be struct but it was: %s", fnt.Out(0).Kind())
+	}
+	errort := reflect.TypeOf((*error)(nil)).Elem()
+	if !fnt.Out(1).Implements(errort) {
+		return errors.New("expected second return to be an error")
+	}
+	return nil
 }
