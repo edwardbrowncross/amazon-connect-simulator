@@ -123,11 +123,16 @@ func TestSimulator(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error starting call: %v", err)
 	}
-	var prompt string
-	var expPrompt string
-	prompt = <-call.O
-	expPrompt = "Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do."
-	if prompt != expPrompt {
-		t.Errorf("Expected welcome prompt of \n'%s'\n but got \n'%s'", expPrompt, prompt)
-	}
+
+	// Test flows with testing utility.
+	expect := NewTestHelper(t, call)
+
+	expect.Message("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
+	expect.MessageContaining("3 to hear the results of an AWS Lambda data dip")
+	expect.ToEnter("3")
+	expect.MessageContaining("Now performing a data dip using AWS Lambda.")
+	expect.Message("Based on the number you are calling from, your area code is located in United Kingdom")
+	expect.Message("Now returning you to the main menu.")
+	expect.MessageContaining("Press 1 to be put in queue for an agent")
+	expect.ToEnter("1")
 }
