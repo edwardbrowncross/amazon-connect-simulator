@@ -11,7 +11,8 @@ import (
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
-type lambdaPayload struct {
+// LambdaPayload is the shape of an Amazon Connect lambda event.
+type LambdaPayload struct {
 	Details lambdaPayloadDetails `json:"Details"`
 	Name    string               `json:"Name"`
 }
@@ -77,7 +78,7 @@ func (m invokeExternalResource) Run(call CallConnector) (next *flow.ModuleID, er
 		fields[i] = fmt.Sprintf(`"%s":%s`, p.K, v)
 	}
 	paramsIn := fmt.Sprintf(`{%s}`, strings.Join(fields, ","))
-	payloadIn := lambdaPayload{
+	payloadIn := LambdaPayload{
 		Details: lambdaPayloadDetails{
 			Parameters: json.RawMessage(paramsIn),
 		},

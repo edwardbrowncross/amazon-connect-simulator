@@ -127,7 +127,7 @@ func TestInvokeExternalResource(t *testing.T) {
 			module: jsonOKNoParams,
 			state: testCallState{
 				lambda: map[string]interface{}{
-					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(c context.Context, evt lambdaPayload) (out testLambdaOutput, err error) {
+					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(c context.Context, evt LambdaPayload) (out testLambdaOutput, err error) {
 						return out, errors.New("something went wrong")
 					},
 				},
@@ -146,7 +146,7 @@ func TestInvokeExternalResource(t *testing.T) {
 					"count": "4",
 				},
 				lambda: map[string]interface{}{
-					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(c context.Context, evt lambdaPayload) (out testLambdaOutput, err error) {
+					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(c context.Context, evt LambdaPayload) (out testLambdaOutput, err error) {
 						in := testLambdaInput{}
 						err = json.Unmarshal(evt.Details.Parameters, &in)
 						if err != nil {
@@ -216,12 +216,12 @@ func TestValidateLambda(t *testing.T) {
 		},
 		{
 			desc: "one input",
-			fn:   func(lambdaPayload) (o testLambdaOutput, e error) { return },
+			fn:   func(LambdaPayload) (o testLambdaOutput, e error) { return },
 			exp:  "expected function to take 2 parameters but it takes 1",
 		},
 		{
 			desc: "first parameter not context",
-			fn:   func(interface{}, lambdaPayload) (o testLambdaOutput, e error) { return },
+			fn:   func(interface{}, LambdaPayload) (o testLambdaOutput, e error) { return },
 			exp:  "expected first argument to be a context.Context",
 		},
 		{
@@ -231,22 +231,22 @@ func TestValidateLambda(t *testing.T) {
 		},
 		{
 			desc: "only one return",
-			fn:   func(context.Context, lambdaPayload) (o testLambdaOutput) { return },
+			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput) { return },
 			exp:  "expected function to return 2 elements but it returns 1",
 		},
 		{
 			desc: "first return not a struct",
-			fn:   func(context.Context, lambdaPayload) (s string, e error) { return },
+			fn:   func(context.Context, LambdaPayload) (s string, e error) { return },
 			exp:  "expected first return to be struct but it was: string",
 		},
 		{
 			desc: "second return not an error",
-			fn:   func(context.Context, lambdaPayload) (o testLambdaOutput, e string) { return },
+			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput, e string) { return },
 			exp:  "expected second return to be an error",
 		},
 		{
 			desc: "success",
-			fn:   func(context.Context, lambdaPayload) (o testLambdaOutput, e error) { return },
+			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput, e error) { return },
 			exp:  "",
 		},
 	}
