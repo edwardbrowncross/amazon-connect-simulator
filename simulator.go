@@ -5,13 +5,12 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/edwardbrowncross/amazon-connect-simulator/call"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 	"github.com/edwardbrowncross/amazon-connect-simulator/module"
 )
 
-// CallSimulator is capable of starting new simulated call flows.
-type CallSimulator struct {
+// Simulator is capable of starting new simulated call flows.
+type Simulator struct {
 	lambdas      map[string]interface{}
 	flows        map[string]flow.Flow
 	modules      map[flow.ModuleID]flow.Module
@@ -20,8 +19,8 @@ type CallSimulator struct {
 
 // New creates a new call simulator.
 // It is created blank and must be set up using its attached methods.
-func New() CallSimulator {
-	return CallSimulator{
+func New() Simulator {
+	return Simulator{
 		lambdas: map[string]interface{}{},
 		flows:   map[string]flow.Flow{},
 		modules: map[flow.ModuleID]flow.Module{},
@@ -30,7 +29,7 @@ func New() CallSimulator {
 
 // LoadFlow loads an unmarshalled call flow into the simulator.
 // Do this with all flows that form part of your call flows before starting a call.
-func (cs *CallSimulator) LoadFlow(flow flow.Flow) {
+func (cs *Simulator) LoadFlow(flow flow.Flow) {
 	cs.flows[flow.Metadata.Name] = flow
 	for _, m := range flow.Modules {
 		cs.modules[m.ID] = m
@@ -39,7 +38,7 @@ func (cs *CallSimulator) LoadFlow(flow flow.Flow) {
 
 // LoadFlowJSON takes a byte array containing a json file exported from Amazon Connect.
 // It does the same thing as LoadFlow, except that it does the unmarshalling for you.
-func (cs *CallSimulator) LoadFlowJSON(bytes []byte) error {
+func (cs *Simulator) LoadFlowJSON(bytes []byte) error {
 	f := flow.Flow{}
 	err := json.Unmarshal(bytes, &f)
 	if err != nil {
@@ -53,7 +52,7 @@ func (cs *CallSimulator) LoadFlowJSON(bytes []byte) error {
 // name is a string that forms part of the lambda's ARN (such as its name).
 // fn is function like handle(context.Context, struct) (struct, error). It will be passed an Amazon Connect lambda event.
 // You must specify a function for each external lambda invocation before starting a simulated call.
-func (cs *CallSimulator) RegisterLambda(name string, fn interface{}) error {
+func (cs *Simulator) RegisterLambda(name string, fn interface{}) error {
 	err := module.ValidateLambda(fn)
 	if err != nil {
 		return err
@@ -65,7 +64,7 @@ func (cs *CallSimulator) RegisterLambda(name string, fn interface{}) error {
 // SetStartingFlow specifies the name of the flow that should be run when a new call comes in.
 // The name is the full name given to the flow in the Amazon Connect ui.
 // You must run this once before starting a simulated call.
-func (cs *CallSimulator) SetStartingFlow(flowName string) error {
+func (cs *Simulator) SetStartingFlow(flowName string) error {
 	f, ok := cs.flows[flowName]
 	if !ok {
 		return errors.New("starting flow not found. Load the flow with LoadFlow before calling this method")
@@ -76,19 +75,20 @@ func (cs *CallSimulator) SetStartingFlow(flowName string) error {
 
 // StartCall starts a new call asynchronously and returns a Call object for interacting with that call.
 // Many independent calls can be spawned from one simulator.
-func (cs *CallSimulator) StartCall(config call.Config) (call.Call, error) {
+func (cs *Simulator) StartCall(config CallConfig) (Call, error) {
 	if cs.startingFlow == nil {
-		return call.Call{}, errors.New("no starting flow set. Call SetStartingFlow before starting a call")
+		return Call{}, errors.New("no starting flow set. Call SetStartingFlow before starting a call")
 	}
-	return call.New(config, &simulatorState{cs}, *&cs.startingFlow.Start), nil
+	return newCall(config, &simulatorConnector{cs}, *&cs.startingFlow.Start), nil
 }
 
-type simulatorState struct {
-	*CallSimulator
+// simulatorConnector exposes methods for modules to get information from the base simulator.
+type simulatorConnector struct {
+	*Simulator
 }
 
 // GetLambda gets a lamda using a partial ARN match.
-func (cs *simulatorState) GetLambda(arn string) interface{} {
+func (cs *simulatorConnector) GetLambda(arn string) interface{} {
 	for k, v := range cs.lambdas {
 		if strings.Contains(arn, k) {
 			return v
@@ -98,7 +98,7 @@ func (cs *simulatorState) GetLambda(arn string) interface{} {
 }
 
 // GetFlowStart gets the module ID of the block at the start of a flow with the given name.
-func (cs *simulatorState) GetFlowStart(flowName string) *flow.ModuleID {
+func (cs *simulatorConnector) GetFlowStart(flowName string) *flow.ModuleID {
 	f, ok := cs.flows[flowName]
 	if !ok {
 		return nil
@@ -107,7 +107,7 @@ func (cs *simulatorState) GetFlowStart(flowName string) *flow.ModuleID {
 }
 
 // GetRunner finds the block with the given ID and wraps in the module providing its functionality.
-func (cs *simulatorState) GetRunner(moduleID flow.ModuleID) module.Runner {
+func (cs *simulatorConnector) GetRunner(moduleID flow.ModuleID) module.Runner {
 	m, ok := cs.modules[moduleID]
 	if !ok {
 		return nil
