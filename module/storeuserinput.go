@@ -20,12 +20,17 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 	if m.Type != flow.ModuleStoreUserInput {
 		return nil, fmt.Errorf("module of type %s being run as storeUserInput", m.Type)
 	}
+	pr := parameterResolver{call}
 	p := storeUserInputParams{}
-	err = parameterResolver{call}.unmarshal(m.Parameters, &p)
+	err = pr.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
-	call.Send(p.Text)
+	txt, err := pr.jsonPath(p.Text)
+	if err != nil {
+		return
+	}
+	call.Send(txt)
 	timeout, err := strconv.Atoi(p.Timeout)
 	if err != nil {
 		return

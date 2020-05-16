@@ -20,15 +20,20 @@ func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleGetUserInput {
 		return nil, fmt.Errorf("module of type %s being run as getUserInput", m.Type)
 	}
+	pr := parameterResolver{call}
 	p := getUserInputParams{}
-	err = parameterResolver{call}.unmarshal(m.Parameters, &p)
+	err = pr.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
 	if p.Text == "" {
 		return m.Branches.GetLink(flow.BranchError), nil
 	}
-	call.Send(p.Text)
+	txt, err := pr.jsonPath(p.Text)
+	if err != nil {
+		return
+	}
+	call.Send(txt)
 	md, err := strconv.Atoi(p.MaxDigits)
 	if err != nil {
 		return nil, fmt.Errorf("invalid MaxDigits: %s", p.MaxDigits)

@@ -28,6 +28,16 @@ func TestStoreUserInput(t *testing.T) {
 			{"name":"MaxDigits","value":8}
 		]
 	}`
+	jsonBadPath := `{
+		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
+		"type":"StoreUserInput",
+		"branches":[],
+		"parameters":[
+			{"name":"Text","value":"prompt","namespace":"External"},
+			{"name":"Timeout","value":"5"},
+			{"name":"MaxDigits","value":8}
+		]
+	}`
 	jsonOK := `{
 		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
 		"type":"StoreUserInput",
@@ -72,6 +82,16 @@ func TestStoreUserInput(t *testing.T) {
 			expErr: `strconv.Atoi: parsing "fishcake": invalid syntax`,
 		},
 		{
+			desc:   "bad json path",
+			module: jsonBadPath,
+			state: testCallState{
+				external: map[string]string{
+					"prompt": "Thanks for phoning $.Clock.time",
+				},
+			}.init(),
+			expErr: `unknown namespace: Clock`,
+		},
+		{
 			desc:   "timeout",
 			module: jsonOK,
 			state: testCallState{
@@ -86,13 +106,14 @@ func TestStoreUserInput(t *testing.T) {
 			state: testCallState{
 				i: "12345678",
 				external: map[string]string{
-					"prompt": "Please enter your account number.",
+					"prompt": "Please enter digits $.External.digits of your passcode.",
+					"digits": "1 and 3",
 				},
 			}.init(),
 			expSys: map[string]string{
 				string(flow.SystemLastUserInput): "12345678",
 			},
-			expPrompt:     "Please enter your account number.",
+			expPrompt:     "Please enter digits 1 and 3 of your passcode.",
 			expRcvCount:   8,
 			expRcvTimeout: 7 * time.Second,
 		},

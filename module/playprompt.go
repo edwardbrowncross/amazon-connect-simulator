@@ -16,11 +16,16 @@ func (m playPrompt) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModulePlayPrompt {
 		return nil, fmt.Errorf("module of type %s being run as playPrompt", m.Type)
 	}
+	pr := parameterResolver{call}
 	p := playPromptParams{}
-	err = parameterResolver{call}.unmarshal(m.Parameters, &p)
+	err = pr.unmarshal(m.Parameters, &p)
 	if err != nil {
 		return
 	}
-	call.Send(p.Text)
+	txt, err := pr.jsonPath(p.Text)
+	if err != nil {
+		return
+	}
+	call.Send(txt)
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }

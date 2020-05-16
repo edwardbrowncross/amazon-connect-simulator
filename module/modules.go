@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"time"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
@@ -156,4 +157,26 @@ func (call parameterResolver) unmarshal(plist flow.ModuleParameterList, into int
 		}
 	}
 	return nil
+}
+
+var jsonP = regexp.MustCompile(`\$\.([a-zA-Z]+)\.([0-9a-zA-Z_\-]+)`)
+
+// jsonPath takes a string like "you live in $.External.city" and interpolates the jsonPath components.
+func (call parameterResolver) jsonPath(msg string) (out string, err error) {
+	out = jsonP.ReplaceAllStringFunc(msg, func(path string) (res string) {
+		bits := jsonP.FindSubmatch([]byte(path))
+		namespace := string(bits[1])
+		key := string(bits[2])
+		var val interface{}
+		switch namespace {
+		case "Attributes":
+			val = call.GetContactData(key)
+		case "External":
+			val = call.GetExternal(key)
+		default:
+			err = fmt.Errorf("unknown namespace: %s", namespace)
+		}
+		return fmt.Sprintf("%v", val)
+	})
+	return
 }

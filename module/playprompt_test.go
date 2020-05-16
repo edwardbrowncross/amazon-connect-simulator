@@ -14,12 +14,18 @@ func TestPlayPrompt(t *testing.T) {
 		"id":"43dcc4f2-3392-4a38-90ed-0216f8594ea8",
 		"type":"PlayPrompt"
 	}`
+	jsonBadPath := `{
+		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
+		"type":"PlayPrompt",
+		"branches":[{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"}],
+		"parameters":[{"name":"Text","value":"Thanks for your call $.Computer.name"}]
+	}`
 	jsonOK := `{
 		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
 		"type":"PlayPrompt",
 		"branches":[{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"}],
 		"parameters":[
-			{"name":"Text","value":"Thanks for your call","namespace":null},
+			{"name":"Text","value":"Thanks for your call, $.Attributes.name.","namespace":null},
 			{"name":"TextToSpeechType","value":"text"}
 		]
 	}`
@@ -41,10 +47,15 @@ func TestPlayPrompt(t *testing.T) {
 			expErr: "missing parameter Text",
 		},
 		{
+			desc:   "bad JSON Path",
+			module: jsonBadPath,
+			expErr: "unknown namespace: Computer",
+		},
+		{
 			desc:   "success",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000001",
-			expOut: "Thanks for your call",
+			expOut: "Thanks for your call, Edward.",
 		},
 	}
 	for _, tC := range testCases {
@@ -54,7 +65,11 @@ func TestPlayPrompt(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			state := testCallState{}.init()
+			state := testCallState{
+				contactData: map[string]string{
+					"name": "Edward",
+				},
+			}.init()
 			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {

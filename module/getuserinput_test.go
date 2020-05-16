@@ -21,6 +21,17 @@ func TestGetUserInput(t *testing.T) {
 			{"name":"MaxDigits","value":"1"}
 		]
 	}`
+	jsonBadPath := `{
+		"id":"43dcc4f2-3392-4a38-90ed-0216f8594ea8",
+		"type":"GetUserInput",
+		"branches":[],
+		"parameters":[
+			{"name":"Text","value":"please select your $.Restaurant.mealType"},
+			{"name":"TextToSpeechType","value":"ssml"},
+			{"name":"Timeout","value":"5"},
+			{"name":"MaxDigits","value":"1"}
+		]
+	}`
 	jsonOK := `{
 		"id":"0a7af980-635b-4965-adbd-76594b8dffec",
 		"type":"GetUserInput",
@@ -61,6 +72,11 @@ func TestGetUserInput(t *testing.T) {
 			expErr: "missing parameter Text",
 		},
 		{
+			desc:   "bad json path",
+			module: jsonBadPath,
+			expErr: "unknown namespace: Restaurant",
+		},
+		{
 			desc:   "parameter reference missing",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000005",
@@ -78,10 +94,11 @@ func TestGetUserInput(t *testing.T) {
 			exp:    "00000000-0000-4000-0000-000000000002",
 			state: testCallState{
 				external: map[string]string{
-					"prompt": "<speak>Enter a number</speak>",
+					"prompt": "<speak>Enter a number, $.External.Name</speak>",
+					"Name":   "Dr Customer",
 				},
 			}.init(),
-			expPrompt:     "<speak>Enter a number</speak>",
+			expPrompt:     "<speak>Enter a number, Dr Customer</speak>",
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
 		},
