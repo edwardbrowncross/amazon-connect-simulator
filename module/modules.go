@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -47,6 +48,7 @@ func MakeRunner(m flow.Module) Runner {
 type CallConnector interface {
 	Send(s string)
 	Receive(count int, timeout time.Duration) *string
+	Emit(event event.Event)
 	GetExternal(key string) interface{}
 	SetExternal(key string, value interface{})
 	ClearExternal()

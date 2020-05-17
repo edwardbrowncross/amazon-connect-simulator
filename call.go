@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -13,8 +14,10 @@ type Call struct {
 	O <-chan string
 	// Input (keypad).
 	I           chan<- rune
+	Evt         <-chan event.Event
 	o           chan<- string
 	i           <-chan rune
+	evt         chan<- event.Event
 	External    map[string]string
 	ContactData map[string]string
 	System      map[string]string
@@ -30,11 +33,14 @@ type CallConfig struct {
 func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) Call {
 	out := make(chan string)
 	in := make(chan rune)
+	evt := make(chan event.Event)
 	c := Call{
 		O:           out,
 		I:           in,
+		Evt:         evt,
 		o:           out,
 		i:           in,
+		evt:         evt,
 		External:    map[string]string{},
 		ContactData: map[string]string{},
 		System:      map[string]string{},
@@ -125,4 +131,13 @@ func (s *callConnector) GetSystem(key string) interface{} {
 // ClearExternal allows clearing of all externalvalues in the state machine.
 func (s *callConnector) ClearExternal() {
 	s.External = map[string]string{}
+}
+
+func (s *callConnector) Emit(event event.Event) {
+	select {
+	case s.evt <- event:
+		return
+	default:
+		return
+	}
 }

@@ -2,7 +2,10 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
+
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 )
 
 func TestPlayPrompt(t *testing.T) {
@@ -18,7 +21,7 @@ func TestPlayPrompt(t *testing.T) {
 		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
 		"type":"PlayPrompt",
 		"branches":[{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"}],
-		"parameters":[{"name":"Text","value":"Thanks for your call $.Computer.name"}]
+		"parameters":[{"name":"Text","value":"Thanks for your call $.Computer.name"}, {"name":"TextToSpeechType","value":"text"}]
 	}`
 	jsonOK := `{
 		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
@@ -29,12 +32,22 @@ func TestPlayPrompt(t *testing.T) {
 			{"name":"TextToSpeechType","value":"text"}
 		]
 	}`
+	jsonOKSSML := `{
+		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
+		"type":"PlayPrompt",
+		"branches":[{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"}],
+		"parameters":[
+			{"name":"Text","value":"<speak>Thanks for your call.</speak>"},
+			{"name":"TextToSpeechType","value":"ssml"}
+		]
+	}`
 	testCases := []struct {
 		desc   string
 		module string
 		exp    string
 		expErr string
 		expOut string
+		expEvt []event.Event
 	}{
 		{
 			desc:   "wrong module",
@@ -56,6 +69,18 @@ func TestPlayPrompt(t *testing.T) {
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000001",
 			expOut: "Thanks for your call, Edward.",
+			expEvt: []event.Event{
+				event.PromptEvent{Text: "Thanks for your call, Edward.", SSML: false},
+			},
+		},
+		{
+			desc:   "success - SSML",
+			module: jsonOKSSML,
+			exp:    "00000000-0000-4000-0000-000000000001",
+			expOut: "<speak>Thanks for your call.</speak>",
+			expEvt: []event.Event{
+				event.PromptEvent{Text: "<speak>Thanks for your call.</speak>", SSML: true},
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -87,6 +112,9 @@ func TestPlayPrompt(t *testing.T) {
 			}
 			if state.o != tC.expOut {
 				t.Errorf("expected ouptut of '%s' but got '%s'", tC.expOut, state.o)
+			}
+			if tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

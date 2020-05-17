@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -22,6 +23,7 @@ type testCallState struct {
 	system      map[string]string
 	lambda      map[string]interface{}
 	flowStart   map[string]flow.ModuleID
+	events      []event.Event
 }
 
 func (st testCallState) init() *testCallState {
@@ -40,6 +42,7 @@ func (st testCallState) init() *testCallState {
 	if st.flowStart == nil {
 		st.flowStart = map[string]flow.ModuleID{}
 	}
+	st.events = make([]event.Event, 0)
 	return &st
 }
 
@@ -93,6 +96,9 @@ func (st *testCallState) GetLambda(named string) interface{} {
 func (st *testCallState) GetFlowStart(flowName string) *flow.ModuleID {
 	r := st.flowStart[flowName]
 	return &r
+}
+func (st *testCallState) Emit(event event.Event) {
+	st.events = append(st.events, event)
 }
 
 func TestMakeRunner(t *testing.T) {

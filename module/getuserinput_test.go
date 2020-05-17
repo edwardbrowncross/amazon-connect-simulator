@@ -2,8 +2,11 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 )
 
 func TestGetUserInput(t *testing.T) {
@@ -60,6 +63,7 @@ func TestGetUserInput(t *testing.T) {
 		expPrompt     string
 		expRcvTimeout time.Duration
 		expRcvCount   int
+		expEvt        []event.Event
 	}{
 		{
 			desc:   "wrong module",
@@ -86,6 +90,7 @@ func TestGetUserInput(t *testing.T) {
 				},
 			}.init(),
 			expPrompt: "",
+			expEvt:    []event.Event{},
 		},
 		{
 			desc:   "matching entry",
@@ -101,6 +106,9 @@ func TestGetUserInput(t *testing.T) {
 			expPrompt:     "<speak>Enter a number, Dr Customer</speak>",
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
+			expEvt: []event.Event{
+				event.PromptEvent{Text: "<speak>Enter a number, Dr Customer</speak>", SSML: true},
+			},
 		},
 		{
 			desc:   "mismatched entry",
@@ -115,6 +123,9 @@ func TestGetUserInput(t *testing.T) {
 			expPrompt:     "<speak>Enter a number</speak>",
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
+			expEvt: []event.Event{
+				event.PromptEvent{Text: "<speak>Enter a number</speak>", SSML: true},
+			},
 		},
 		{
 			desc:   "timeout",
@@ -128,6 +139,9 @@ func TestGetUserInput(t *testing.T) {
 			expPrompt:     "<speak>Enter a number</speak>",
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
+			expEvt: []event.Event{
+				event.PromptEvent{Text: "<speak>Enter a number</speak>", SSML: true},
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -165,6 +179,9 @@ func TestGetUserInput(t *testing.T) {
 			}
 			if state.rcv.timeout != tC.expRcvTimeout {
 				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
+			}
+			if tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

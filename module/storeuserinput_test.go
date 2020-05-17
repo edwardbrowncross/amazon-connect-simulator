@@ -2,9 +2,11 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -25,7 +27,8 @@ func TestStoreUserInput(t *testing.T) {
 		"parameters":[
 			{"name":"Text","value":"prompt","namespace":"External"},
 			{"name":"Timeout","value":"fishcake"},
-			{"name":"MaxDigits","value":8}
+			{"name":"MaxDigits","value":8},
+			{"name":"TextToSpeechType","value":"text"}
 		]
 	}`
 	jsonBadPath := `{
@@ -35,7 +38,8 @@ func TestStoreUserInput(t *testing.T) {
 		"parameters":[
 			{"name":"Text","value":"prompt","namespace":"External"},
 			{"name":"Timeout","value":"5"},
-			{"name":"MaxDigits","value":8}
+			{"name":"MaxDigits","value":8},
+			{"name":"TextToSpeechType","value":"text"}
 		]
 	}`
 	jsonOK := `{
@@ -47,7 +51,7 @@ func TestStoreUserInput(t *testing.T) {
 		],
 		"parameters":[
 			{"name":"Text","value":"prompt","namespace":"External"},
-			{"name":"TextToSpeechType","value":"text"},
+			{"name":"TextToSpeechType","value":"ssml"},
 			{"name":"CustomerInputType","value":"Custom"},
 			{"name":"Timeout","value":"7"},
 			{"name":"MaxDigits","value":8},
@@ -65,6 +69,7 @@ func TestStoreUserInput(t *testing.T) {
 		expSys        map[string]string
 		expRcvTimeout time.Duration
 		expRcvCount   int
+		expEvt        []event.Event
 	}{
 		{
 			desc:   "wrong module",
@@ -106,16 +111,19 @@ func TestStoreUserInput(t *testing.T) {
 			state: testCallState{
 				i: "12345678",
 				external: map[string]string{
-					"prompt": "Please enter digits $.External.digits of your passcode.",
+					"prompt": "<speak>Please enter digits $.External.digits of your passcode.</speak>",
 					"digits": "1 and 3",
 				},
 			}.init(),
 			expSys: map[string]string{
 				string(flow.SystemLastUserInput): "12345678",
 			},
-			expPrompt:     "Please enter digits 1 and 3 of your passcode.",
+			expPrompt:     "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 			expRcvCount:   8,
 			expRcvTimeout: 7 * time.Second,
+			expEvt: []event.Event{
+				event.PromptEvent{Text: "<speak>Please enter digits 1 and 3 of your passcode.</speak>", SSML: true},
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -157,6 +165,9 @@ func TestStoreUserInput(t *testing.T) {
 			}
 			if tC.expRcvTimeout > 0 && state.rcv.timeout != tC.expRcvTimeout {
 				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
+			}
+			if tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

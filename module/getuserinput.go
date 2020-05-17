@@ -5,15 +5,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
 type getUserInput flow.Module
 
 type getUserInputParams struct {
-	Text      string
-	Timeout   string
-	MaxDigits string
+	Text             string
+	Timeout          string
+	MaxDigits        string
+	TextToSpeechType string
 }
 
 func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
@@ -33,6 +35,10 @@ func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return
 	}
+	call.Emit(event.PromptEvent{
+		Text: txt,
+		SSML: p.TextToSpeechType == "ssml",
+	})
 	call.Send(txt)
 	md, err := strconv.Atoi(p.MaxDigits)
 	if err != nil {

@@ -3,13 +3,15 @@ package module
 import (
 	"fmt"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
 type playPrompt flow.Module
 
 type playPromptParams struct {
-	Text string
+	Text             string
+	TextToSpeechType string
 }
 
 func (m playPrompt) Run(call CallConnector) (next *flow.ModuleID, err error) {
@@ -26,6 +28,10 @@ func (m playPrompt) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return
 	}
+	call.Emit(event.PromptEvent{
+		Text: txt,
+		SSML: p.TextToSpeechType == "ssml",
+	})
 	call.Send(txt)
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }
