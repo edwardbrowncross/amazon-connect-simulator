@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -19,10 +20,13 @@ func (m transfer) Run(call CallConnector) (next *flow.ModuleID, err error) {
 		if cfid == nil {
 			return nil, errors.New("missing ContextFlowId parameter")
 		}
+		call.Emit(event.NewModuleEvent(flow.Module(m)))
 		return call.GetFlowStart(cfid.ResourceName), nil
 	case flow.TargetQueue:
+		call.Emit(event.NewModuleEvent(flow.Module(m)))
 		queue := call.GetSystem(string(flow.SystemQueueName))
-		call.Send(fmt.Sprintf("<transfer to queue %s>", queue))
+		arn := call.GetSystem(string(flow.SystemQueueARN))
+		call.Emit(event.QueueTransferEvent{QueueARN: arn.(string), QueueName: queue.(string)})
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unhandled transfer target: %s", m.Target)

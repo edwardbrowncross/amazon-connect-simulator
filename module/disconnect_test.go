@@ -2,7 +2,10 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
+
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 )
 
 func TestDisconnect(t *testing.T) {
@@ -20,6 +23,7 @@ func TestDisconnect(t *testing.T) {
 		desc   string
 		module string
 		exp    string
+		expEvt []event.Event
 		expErr string
 	}{
 		{
@@ -31,6 +35,10 @@ func TestDisconnect(t *testing.T) {
 			desc:   "success",
 			module: jsonOK,
 			exp:    "",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Disconnect"},
+				event.DisconnectEvent{},
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -40,7 +48,8 @@ func TestDisconnect(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			next, err := mod.Run(testCallState{}.init())
+			state := testCallState{}.init()
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -54,6 +63,9 @@ func TestDisconnect(t *testing.T) {
 			}
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%v'", tC.exp, *next)
+			}
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

@@ -2,8 +2,10 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -30,8 +32,9 @@ func TestSetQueue(t *testing.T) {
 		desc   string
 		module string
 		exp    string
-		expErr string
 		expSys map[string]string
+		expEvt []event.Event
+		expErr string
 	}{
 		{
 			desc:   "wrong module",
@@ -50,6 +53,9 @@ func TestSetQueue(t *testing.T) {
 			expSys: map[string]string{
 				string(flow.SystemQueueARN):  "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001",
 				string(flow.SystemQueueName): "Complaints",
+			},
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "SetQueue"},
 			},
 		},
 	}
@@ -80,6 +86,9 @@ func TestSetQueue(t *testing.T) {
 				if state.system[k] != v {
 					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, state.system[k])
 				}
+			}
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

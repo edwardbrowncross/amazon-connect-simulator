@@ -3,6 +3,7 @@ package module
 import (
 	"fmt"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -12,5 +13,6 @@ func (m checkHoursOfOperation) Run(call CallConnector) (next *flow.ModuleID, err
 	if m.Type != flow.ModuleCheckHoursOfOperation {
 		return nil, fmt.Errorf("module of type %s being run as checkHoursOfOperation", m.Type)
 	}
+	call.Emit(event.NewModuleEvent(flow.Module(m)))
 	return m.Branches.GetLink(flow.BranchTrue), nil
 }

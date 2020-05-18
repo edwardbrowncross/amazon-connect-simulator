@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -80,8 +81,9 @@ func TestInvokeExternalResource(t *testing.T) {
 		module      string
 		state       *testCallState
 		exp         string
-		expErr      string
 		expExternal map[string]string
+		expEvt      []event.Event
+		expErr      string
 	}{
 		{
 			desc:   "wrong module",
@@ -106,7 +108,10 @@ func TestInvokeExternalResource(t *testing.T) {
 					"arn:aws:lambda:eu-west-2:456789012345:function:a-different-lambda": func() {},
 				},
 			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000002",
+			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
+			},
 			expErr: "",
 		},
 		{
@@ -119,7 +124,10 @@ func TestInvokeExternalResource(t *testing.T) {
 					},
 				},
 			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000002",
+			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
+			},
 			expErr: "",
 		},
 		{
@@ -132,7 +140,10 @@ func TestInvokeExternalResource(t *testing.T) {
 					},
 				},
 			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000002",
+			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
+			},
 			expErr: "",
 		},
 		{
@@ -165,7 +176,10 @@ func TestInvokeExternalResource(t *testing.T) {
 					},
 				},
 			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000001",
+			exp: "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
+			},
 			expErr: "",
 		},
 	}
@@ -197,6 +211,9 @@ func TestInvokeExternalResource(t *testing.T) {
 			}
 			if tC.expExternal != nil && !reflect.DeepEqual(tC.expExternal, state.external) {
 				t.Errorf("expected external to be:\n%v\nbut it was \n%v", tC.expExternal, state.external)
+			}
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

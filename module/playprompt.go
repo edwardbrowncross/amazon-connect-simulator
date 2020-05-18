@@ -24,6 +24,7 @@ func (m playPrompt) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return
 	}
+	call.Emit(event.NewModuleEvent(flow.Module(m)))
 	txt, err := pr.jsonPath(p.Text)
 	if err != nil {
 		return

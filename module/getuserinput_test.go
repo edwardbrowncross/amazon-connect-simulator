@@ -36,7 +36,7 @@ func TestGetUserInput(t *testing.T) {
 		]
 	}`
 	jsonOK := `{
-		"id":"0a7af980-635b-4965-adbd-76594b8dffec",
+		"id":"43dcc4f2-3392-4a38-90ed-0216f8594ea8",
 		"type":"GetUserInput",
 		"branches":[
 			{"condition":"Evaluate","conditionType":"Equals","conditionValue":"1","transition":"00000000-0000-4000-0000-000000000001"},
@@ -79,6 +79,9 @@ func TestGetUserInput(t *testing.T) {
 			desc:   "bad json path",
 			module: jsonBadPath,
 			expErr: "unknown namespace: Restaurant",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
+			},
 		},
 		{
 			desc:   "parameter reference missing",
@@ -90,7 +93,9 @@ func TestGetUserInput(t *testing.T) {
 				},
 			}.init(),
 			expPrompt: "",
-			expEvt:    []event.Event{},
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
+			},
 		},
 		{
 			desc:   "matching entry",
@@ -107,7 +112,9 @@ func TestGetUserInput(t *testing.T) {
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
 			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
 				event.PromptEvent{Text: "<speak>Enter a number, Dr Customer</speak>", SSML: true},
+				event.InputEvent{Timeout: 5 * time.Second, MaxDigits: 1},
 			},
 		},
 		{
@@ -124,7 +131,9 @@ func TestGetUserInput(t *testing.T) {
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
 			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
 				event.PromptEvent{Text: "<speak>Enter a number</speak>", SSML: true},
+				event.InputEvent{Timeout: 5 * time.Second, MaxDigits: 1},
 			},
 		},
 		{
@@ -140,7 +149,9 @@ func TestGetUserInput(t *testing.T) {
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
 			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
 				event.PromptEvent{Text: "<speak>Enter a number</speak>", SSML: true},
+				event.InputEvent{Timeout: 5 * time.Second, MaxDigits: 1},
 			},
 		},
 	}
@@ -180,7 +191,7 @@ func TestGetUserInput(t *testing.T) {
 			if state.rcv.timeout != tC.expRcvTimeout {
 				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
 			}
-			if tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events) {
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
 				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})

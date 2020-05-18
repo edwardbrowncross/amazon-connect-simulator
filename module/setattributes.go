@@ -3,6 +3,7 @@ package module
 import (
 	"fmt"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -21,6 +22,7 @@ func (m setAttributes) Run(call CallConnector) (next *flow.ModuleID, err error) 
 	if err != nil {
 		return
 	}
+	call.Emit(event.NewModuleEvent(flow.Module(m)))
 	for _, a := range p.Attribute {
 		call.SetContactData(a.K, a.V)
 	}

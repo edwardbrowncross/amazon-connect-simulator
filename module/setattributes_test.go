@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 )
 
 func TestSetAttributes(t *testing.T) {
@@ -30,8 +32,9 @@ func TestSetAttributes(t *testing.T) {
 		module  string
 		state   *testCallState
 		exp     string
-		expErr  string
 		expAttr map[string]string
+		expEvt  []event.Event
+		expErr  string
 	}{
 		{
 			desc:   "wrong module",
@@ -54,6 +57,9 @@ func TestSetAttributes(t *testing.T) {
 			exp: "00000000-0000-4000-0000-000000000001",
 			expAttr: map[string]string{
 				"authorized": "yes",
+			},
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "SetAttributes"},
 			},
 		},
 	}
@@ -85,6 +91,9 @@ func TestSetAttributes(t *testing.T) {
 			}
 			if tC.expAttr != nil && !reflect.DeepEqual(state.contactData, tC.expAttr) {
 				t.Errorf("expected contact data of '%s' but got '%s'", tC.expAttr, state.contactData)
+			}
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

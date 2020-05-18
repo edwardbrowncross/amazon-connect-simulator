@@ -62,6 +62,9 @@ func TestPlayPrompt(t *testing.T) {
 		{
 			desc:   "bad JSON Path",
 			module: jsonBadPath,
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "PlayPrompt"},
+			},
 			expErr: "unknown namespace: Computer",
 		},
 		{
@@ -70,6 +73,7 @@ func TestPlayPrompt(t *testing.T) {
 			exp:    "00000000-0000-4000-0000-000000000001",
 			expOut: "Thanks for your call, Edward.",
 			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "PlayPrompt"},
 				event.PromptEvent{Text: "Thanks for your call, Edward.", SSML: false},
 			},
 		},
@@ -79,6 +83,7 @@ func TestPlayPrompt(t *testing.T) {
 			exp:    "00000000-0000-4000-0000-000000000001",
 			expOut: "<speak>Thanks for your call.</speak>",
 			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "PlayPrompt"},
 				event.PromptEvent{Text: "<speak>Thanks for your call.</speak>", SSML: true},
 			},
 		},
@@ -113,7 +118,7 @@ func TestPlayPrompt(t *testing.T) {
 			if state.o != tC.expOut {
 				t.Errorf("expected ouptut of '%s' but got '%s'", tC.expOut, state.o)
 			}
-			if tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events) {
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
 				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})

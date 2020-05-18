@@ -95,14 +95,26 @@ func TestStoreUserInput(t *testing.T) {
 				},
 			}.init(),
 			expErr: `unknown namespace: Clock`,
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "StoreUserInput"},
+			},
 		},
 		{
 			desc:   "timeout",
 			module: jsonOK,
 			state: testCallState{
 				i: "",
+				external: map[string]string{
+					"prompt": "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
+				},
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "StoreUserInput"},
+				event.PromptEvent{Text: "<speak>Please enter digits 1 and 3 of your passcode.</speak>", SSML: true},
+				event.InputEvent{Timeout: 7 * time.Second, MaxDigits: 8},
+			},
+			expPrompt: "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 		},
 		{
 			desc:   "success",
@@ -122,7 +134,9 @@ func TestStoreUserInput(t *testing.T) {
 			expRcvCount:   8,
 			expRcvTimeout: 7 * time.Second,
 			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "StoreUserInput"},
 				event.PromptEvent{Text: "<speak>Please enter digits 1 and 3 of your passcode.</speak>", SSML: true},
+				event.InputEvent{Timeout: 7 * time.Second, MaxDigits: 8},
 			},
 		},
 	}
@@ -166,9 +180,10 @@ func TestStoreUserInput(t *testing.T) {
 			if tC.expRcvTimeout > 0 && state.rcv.timeout != tC.expRcvTimeout {
 				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
 			}
-			if tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events) {
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
 				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
+
 		})
 	}
 }

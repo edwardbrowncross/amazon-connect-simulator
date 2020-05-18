@@ -2,8 +2,10 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -54,72 +56,88 @@ func TestCheckAttribute(t *testing.T) {
 		]
 	}`
 	testCases := []struct {
-		desc    string
-		module  string
-		context CallConnector
-		exp     string
-		expErr  string
+		desc   string
+		module string
+		state  *testCallState
+		exp    string
+		expEvt []event.Event
+		expErr string
 	}{
 		{
-			desc:    "wrong module",
-			module:  jsonBadMod,
-			context: testCallState{}.init(),
-			exp:     "",
-			expErr:  "module of type Disconnect being run as checkAttribute",
+			desc:   "wrong module",
+			module: jsonBadMod,
+			state:  testCallState{}.init(),
+			exp:    "",
+			expErr: "module of type Disconnect being run as checkAttribute",
 		},
 		{
-			desc:    "bad parameters",
-			module:  jsonBadParams,
-			context: testCallState{}.init(),
-			exp:     "",
-			expErr:  "missing parameter Namespace",
+			desc:   "bad parameters",
+			module: jsonBadParams,
+			state:  testCallState{}.init(),
+			exp:    "",
+			expErr: "missing parameter Namespace",
 		},
 		{
-			desc:    "unknown condition",
-			module:  jsonBadCondition,
-			context: testCallState{}.init(),
-			exp:     "",
-			expErr:  "unhandled condition type: StartsWith",
+			desc:   "unknown condition",
+			module: jsonBadCondition,
+			state:  testCallState{}.init(),
+			exp:    "",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
+			},
+			expErr: "unhandled condition type: StartsWith",
 		},
 		{
 			desc:   "numeric comparison match",
 			module: jsonNum,
-			context: testCallState{
+			state: testCallState{
 				external: map[string]string{
 					"securityAttempts": "3",
 				},
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
+			},
 		},
 		{
 			desc:   "numeric comparison no match",
 			module: jsonNum,
-			context: testCallState{
+			state: testCallState{
 				external: map[string]string{
 					"securityAttempts": "10",
 				},
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
+			},
 		},
 		{
 			desc:   "string comparison match",
 			module: jsonString,
-			context: testCallState{
+			state: testCallState{
 				system: map[string]string{
 					flow.SystemQueueName: "complaints",
 				},
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
+			},
 		},
 		{
 			desc:   "string comparison no match",
 			module: jsonString,
-			context: testCallState{
+			state: testCallState{
 				system: map[string]string{
 					flow.SystemQueueName: "sales",
 				},
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -129,7 +147,11 @@ func TestCheckAttribute(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			next, err := mod.Run(tC.context)
+			state := tC.state
+			if state == nil {
+				state = testCallState{}.init()
+			}
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -143,6 +165,9 @@ func TestCheckAttribute(t *testing.T) {
 			}
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%v'", tC.exp, *next)
+			}
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

@@ -2,8 +2,10 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -52,8 +54,9 @@ func TestTransfer(t *testing.T) {
 		module string
 		state  *testCallState
 		exp    string
-		expErr string
 		expSys map[string]string
+		expEvt []event.Event
+		expErr string
 	}{
 		{
 			desc:   "wrong module",
@@ -79,6 +82,9 @@ func TestTransfer(t *testing.T) {
 				},
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
+			},
 		},
 		{
 			desc:   "success - queue",
@@ -86,9 +92,14 @@ func TestTransfer(t *testing.T) {
 			state: testCallState{
 				system: map[string]string{
 					flow.SystemQueueName: "complaints",
+					flow.SystemQueueARN:  "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001",
 				},
 			}.init(),
 			exp: "",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
+				event.QueueTransferEvent{QueueName: "complaints", QueueARN: "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001"},
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -121,6 +132,9 @@ func TestTransfer(t *testing.T) {
 				if state.system[k] != v {
 					t.Errorf("expected system %s to be '%s' but it was '%s'", k, v, state.system[k])
 				}
+			}
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}

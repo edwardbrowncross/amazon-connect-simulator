@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -65,6 +66,7 @@ func (m invokeExternalResource) Run(call CallConnector) (next *flow.ModuleID, er
 	if err != nil {
 		return
 	}
+	call.Emit(event.NewModuleEvent(flow.Module(m)))
 	fn := call.GetLambda(p.FunctionArn)
 	if fn == nil {
 		return m.Branches.GetLink(flow.BranchError), nil

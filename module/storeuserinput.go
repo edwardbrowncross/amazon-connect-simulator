@@ -28,6 +28,11 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 	if err != nil {
 		return
 	}
+	timeout, err := strconv.Atoi(p.Timeout)
+	if err != nil {
+		return
+	}
+	call.Emit(event.NewModuleEvent(flow.Module(m)))
 	txt, err := pr.jsonPath(p.Text)
 	if err != nil {
 		return
@@ -37,10 +42,10 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 		SSML: p.TextToSpeechType == "ssml",
 	})
 	call.Send(txt)
-	timeout, err := strconv.Atoi(p.Timeout)
-	if err != nil {
-		return
-	}
+	call.Emit(event.InputEvent{
+		MaxDigits: p.MaxDigits,
+		Timeout:   time.Duration(timeout) * time.Second,
+	})
 	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second)
 	if entry == nil {
 		next = m.Branches.GetLink(flow.BranchError)

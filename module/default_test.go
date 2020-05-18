@@ -2,7 +2,10 @@ package module
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
+
+	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 )
 
 func TestPassthrough(t *testing.T) {
@@ -18,12 +21,16 @@ func TestPassthrough(t *testing.T) {
 		desc   string
 		module string
 		exp    string
+		expEvt []event.Event
 		expErr string
 	}{
 		{
 			desc:   "success",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "SetVoice"},
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -33,7 +40,8 @@ func TestPassthrough(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error unmarshalling module: %v", err)
 			}
-			next, err := mod.Run(testCallState{}.init())
+			state := testCallState{}.init()
+			next, err := mod.Run(state)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
@@ -47,6 +55,9 @@ func TestPassthrough(t *testing.T) {
 			}
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%v'", tC.exp, *next)
+			}
+			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
+				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
 		})
 	}
