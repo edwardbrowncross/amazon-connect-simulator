@@ -95,7 +95,7 @@ func TestSimulator(t *testing.T) {
 		t.Error("expected error registering incompatible lambda handler but got none.")
 	}
 
-	var call Call
+	var call *Call
 
 	// Try to start call without starting flow set. Expect error.
 	_, err = sim.StartCall(CallConfig{})

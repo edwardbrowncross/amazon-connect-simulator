@@ -2,6 +2,7 @@ package simulator
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
@@ -14,10 +15,10 @@ type Call struct {
 	O <-chan string
 	// Input (keypad).
 	I           chan<- rune
-	Evt         <-chan event.Event
 	o           chan<- string
 	i           <-chan rune
-	evt         chan<- event.Event
+	evts        []chan<- event.Event
+	evtsMutex   sync.Mutex
 	External    map[string]string
 	ContactData map[string]string
 	System      map[string]string
@@ -30,23 +31,22 @@ type CallConfig struct {
 }
 
 // New is used by the simulator to create a new call.
-func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) Call {
+func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call {
 	out := make(chan string)
 	in := make(chan rune)
-	evt := make(chan event.Event)
 	c := Call{
 		O:           out,
 		I:           in,
-		Evt:         evt,
 		o:           out,
 		i:           in,
-		evt:         evt,
+		evtsMutex:   sync.Mutex{},
+		evts:        make([]chan<- event.Event, 0),
 		External:    map[string]string{},
 		ContactData: map[string]string{},
 		System:      map[string]string{},
 	}
-	go c.run(start, callConnector{c, sc})
-	return c
+	go c.run(start, callConnector{&c, sc})
+	return &c
 }
 
 func (c *Call) run(start flow.ModuleID, cs callConnector) {
@@ -59,9 +59,17 @@ func (c *Call) run(start flow.ModuleID, cs callConnector) {
 	}
 }
 
+// Subscribe registers to receive structured events from the call.
+// It takes a channel which events will be written to (without blocking the call).
+func (c *Call) Subscribe(events chan<- event.Event) {
+	c.evtsMutex.Lock()
+	c.evts = append(c.evts, events)
+	c.evtsMutex.Unlock()
+}
+
 // callConnector exposes methods for modules to interact with the ongoing call.
 type callConnector struct {
-	Call
+	*Call
 	*simulatorConnector
 }
 
@@ -134,10 +142,12 @@ func (s *callConnector) ClearExternal() {
 }
 
 func (s *callConnector) Emit(event event.Event) {
-	select {
-	case s.evt <- event:
-		return
-	default:
-		return
+	s.evtsMutex.Lock()
+	for _, evt := range s.evts {
+		select {
+		case evt <- event:
+		default:
+		}
 	}
+	s.evtsMutex.Unlock()
 }

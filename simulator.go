@@ -75,9 +75,9 @@ func (cs *Simulator) SetStartingFlow(flowName string) error {
 
 // StartCall starts a new call asynchronously and returns a Call object for interacting with that call.
 // Many independent calls can be spawned from one simulator.
-func (cs *Simulator) StartCall(config CallConfig) (Call, error) {
+func (cs *Simulator) StartCall(config CallConfig) (*Call, error) {
 	if cs.startingFlow == nil {
-		return Call{}, errors.New("no starting flow set. Call SetStartingFlow before starting a call")
+		return nil, errors.New("no starting flow set. Call SetStartingFlow before starting a call")
 	}
 	return newCall(config, &simulatorConnector{cs}, *&cs.startingFlow.Start), nil
 }
