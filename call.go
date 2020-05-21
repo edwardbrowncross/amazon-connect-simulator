@@ -18,6 +18,7 @@ type Call struct {
 	o           chan<- string
 	i           <-chan rune
 	evts        []chan<- event.Event
+	kill        chan<- interface{}
 	evtsMutex   sync.Mutex
 	External    map[string]string
 	ContactData map[string]string
@@ -34,29 +35,45 @@ type CallConfig struct {
 func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call {
 	out := make(chan string)
 	in := make(chan rune)
+	kill := make(chan interface{})
 	c := Call{
 		O:           out,
 		I:           in,
 		o:           out,
 		i:           in,
+		kill:        kill,
 		evtsMutex:   sync.Mutex{},
 		evts:        make([]chan<- event.Event, 0),
 		External:    map[string]string{},
 		ContactData: map[string]string{},
 		System:      map[string]string{},
 	}
-	go c.run(start, callConnector{&c, sc})
+	go c.run(start, callConnector{&c, sc}, kill)
 	return &c
 }
 
-func (c *Call) run(start flow.ModuleID, cs callConnector) {
+func (c *Call) run(start flow.ModuleID, cs callConnector, kill <-chan interface{}) {
 	var next *flow.ModuleID
 	var err error
 	next = &start
+loop:
 	for next != nil && err == nil {
-		m := cs.GetRunner(*next)
-		next, err = m.Run(&cs)
+		select {
+		case _, ok := <-kill:
+			if !ok {
+				break loop
+			}
+		default:
+			m := cs.GetRunner(*next)
+			next, err = m.Run(&cs)
+		}
 	}
+	close(c.o)
+	c.evtsMutex.Lock()
+	for _, ch := range c.evts {
+		close(ch)
+	}
+	c.evtsMutex.Unlock()
 }
 
 // Subscribe registers to receive structured events from the call.
@@ -65,6 +82,12 @@ func (c *Call) Subscribe(events chan<- event.Event) {
 	c.evtsMutex.Lock()
 	c.evts = append(c.evts, events)
 	c.evtsMutex.Unlock()
+}
+
+// Terminate ends an ongoing call.
+// If the call has already ended, it does nothing.
+func (c *Call) Terminate() {
+	close(c.kill)
 }
 
 // callConnector exposes methods for modules to interact with the ongoing call.
@@ -84,7 +107,10 @@ func (s *callConnector) Receive(count int, timeout time.Duration) *string {
 	select {
 	case <-time.After(timeout):
 		return nil
-	case in := <-s.i:
+	case in, ok := <-s.i:
+		if !ok {
+			s.Terminate()
+		}
 		got = append(got, in)
 	}
 	for len(got) < count {
