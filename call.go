@@ -17,6 +17,7 @@ type Call struct {
 	I           chan<- rune
 	o           chan<- string
 	i           <-chan rune
+	Err         error
 	evts        []chan<- event.Event
 	kill        chan<- interface{}
 	evtsMutex   sync.Mutex
@@ -68,6 +69,7 @@ loop:
 			next, err = m.Run(&cs)
 		}
 	}
+	c.Err = err
 	close(c.o)
 	c.evtsMutex.Lock()
 	for _, ch := range c.evts {
