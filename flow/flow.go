@@ -90,13 +90,13 @@ const (
 
 // Flow is the base of the XML structure of an exported flow.
 type Flow struct {
-	Modules  []Module     `json:"modules"`
-	Start    ModuleID     `json:"start"`
-	Metadata FlowMetadata `json:"metadata"`
+	Modules  []Module `json:"modules"`
+	Start    ModuleID `json:"start"`
+	Metadata Metadata `json:"metadata"`
 }
 
-// FlowMetadata holds metadata about the flow (which appears in the top left of the Connect flow UI)
-type FlowMetadata struct {
+// Metadata holds metadata about the flow (which appears in the top left of the Connect flow UI)
+type Metadata struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Type        string `json:"type"`
