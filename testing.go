@@ -62,8 +62,9 @@ func NewTestHelper(t *testing.T, c *Call) *TestHelper {
 	return &th
 }
 
-func (th *TestHelper) readEvents() {
-	<-th.ready
+func (th *TestHelper) readEvents() (ok bool) {
+	_, ok = <-th.ready
+	return
 }
 
 func (th *TestHelper) cancelReady() {
@@ -71,7 +72,7 @@ func (th *TestHelper) cancelReady() {
 }
 
 func (th *TestHelper) run(m matcher) {
-	th.readEvents()
+	ok := th.readEvents()
 	th.mutex.RLock()
 	defer th.mutex.RUnlock()
 	var gots []string
@@ -86,12 +87,23 @@ func (th *TestHelper) run(m matcher) {
 		}
 		gots = append(gots, got)
 	}
+	if len(gots) == 0 {
+		gots = append(gots, "nothing")
+	}
 	th.t.Errorf("expected %s. Got: \n%v.", m.expected(), strings.Join(gots, "\n"))
+	if !ok {
+		if th.c.Err != nil {
+			th.t.Fatalf("call ended with error: %v", th.c.Err)
+		} else {
+			th.t.Fatal("call terminated unexpectedly")
+}
+	}
 }
 
 // ToEnter sends the given string as either a numeric entry or as an option selection.
 // If not all characters can be sent, or more characters are required, it errors the test.
 func (th *TestHelper) ToEnter(input string) {
+	th.cancelReady()
 	for i, r := range input {
 		select {
 		case th.c.I <- r:
