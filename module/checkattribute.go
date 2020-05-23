@@ -39,20 +39,21 @@ func evaluateConditions(c flow.ModuleBranchList, v string) (*flow.ModuleID, erro
 	vn, err := strconv.ParseFloat(v, 64)
 	numeric := bool(err == nil)
 	for _, c := range conditions {
-		cvn, err := strconv.ParseFloat(c.ConditionValue, 64)
+		val := fmt.Sprintf("%v", c.ConditionValue)
+		cvn, err := strconv.ParseFloat(val, 64)
 		numeric := numeric && bool(err == nil)
 		pass := false
 		switch c.ConditionType {
 		case flow.ConditionEquals:
-			pass = bool(v == c.ConditionValue)
+			pass = bool(v == val)
 		case flow.ConditionGT:
-			pass = bool((numeric && vn > cvn) || (!numeric && v > c.ConditionValue))
+			pass = bool((numeric && vn > cvn) || (!numeric && v > val))
 		case flow.ConditionGTE:
-			pass = bool((numeric && vn >= cvn) || (!numeric && v >= c.ConditionValue))
+			pass = bool((numeric && vn >= cvn) || (!numeric && v >= val))
 		case flow.ConditionLT:
-			pass = bool((numeric && vn < cvn) || (!numeric && v < c.ConditionValue))
+			pass = bool((numeric && vn < cvn) || (!numeric && v < val))
 		case flow.ConditionLTE:
-			pass = bool((numeric && vn <= cvn) || (!numeric && v <= c.ConditionValue))
+			pass = bool((numeric && vn <= cvn) || (!numeric && v <= val))
 		default:
 			return nil, fmt.Errorf("unhandled condition type: %s", c.ConditionType)
 		}

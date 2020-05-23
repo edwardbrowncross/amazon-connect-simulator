@@ -115,7 +115,7 @@ func (s *callConnector) Receive(count int, timeout time.Duration) *string {
 		}
 		got = append(got, in)
 	}
-	for len(got) < count {
+	for len(got) < count && got[len(got)-1] != '#' {
 		got = append(got, <-s.i)
 	}
 	r := string(got)
