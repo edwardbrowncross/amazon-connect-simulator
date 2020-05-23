@@ -95,6 +95,9 @@ func (st *testCallState) GetLambda(named string) interface{} {
 }
 func (st *testCallState) GetFlowStart(flowName string) *flow.ModuleID {
 	r := st.flowStart[flowName]
+	if r == "" {
+		return nil
+	}
 	return &r
 }
 func (st *testCallState) Emit(event event.Event) {

@@ -71,7 +71,18 @@ func TestTransfer(t *testing.T) {
 		{
 			desc:   "bad parameter - flow",
 			module: jsonFlowBadParam,
-			expErr: "missing ContextFlowId parameter",
+			expErr: "missing ContactFlowId parameter",
+		},
+		{
+			desc:   "non-existant flow",
+			module: jsonFlowOK,
+			state: testCallState{
+				flowStart: map[string]flow.ModuleID{},
+			}.init(),
+			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
+			},
 		},
 		{
 			desc:   "success - flow",
@@ -84,6 +95,7 @@ func TestTransfer(t *testing.T) {
 			exp: "00000000-0000-4000-0000-000000000001",
 			expEvt: []event.Event{
 				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
+				event.FlowTransferEvent{FlowName: "Security", FlowARN: "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/contact-flow/ffffffff-0000-4000-0000-ffffffff0001"},
 			},
 		},
 		{

@@ -131,6 +131,16 @@ func (th *TestHelper) MessageContaining(msg string) {
 	th.run(promptPartialMatcher{msg})
 }
 
+// TransferToQueue asserts that the caller is transferred to a queue with the given name.
+func (th *TestHelper) TransferToQueue(named string) {
+	th.run(queueTransferMatcher{named})
+}
+
+// TransferToFlow asserts that the call moved to the flow with the given name.
+func (th *TestHelper) TransferToFlow(named string) {
+	th.run(flowTransferMatcher{named})
+}
+
 type matcher interface {
 	match(event.Event) (match bool, pass bool, got string)
 	expected() string

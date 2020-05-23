@@ -15,6 +15,7 @@ const (
 	PromptType             = "Prompt"
 	InputType              = "Type"
 	TransferQueueType      = "TransferQueue"
+	TransferFlowType       = "TransferFlow"
 	DisconnectType         = "Disconnect"
 )
 
@@ -73,6 +74,17 @@ type QueueTransferEvent struct {
 // Type returns TransferQueueType.
 func (e QueueTransferEvent) Type() Type {
 	return TransferQueueType
+}
+
+// FlowTransferEvent is emitted when a caller is transfered to a different flow.
+type FlowTransferEvent struct {
+	FlowARN  string
+	FlowName string
+}
+
+// Type returns TransferFlowType.
+func (e FlowTransferEvent) Type() Type {
+	return TransferFlowType
 }
 
 // DisconnectEvent is emitted when the flow is terminated.
