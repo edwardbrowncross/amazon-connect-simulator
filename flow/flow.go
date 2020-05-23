@@ -1,5 +1,7 @@
 package flow
 
+import "encoding/json"
+
 // ModuleID is a uuid assigned to a block in the flow.
 type ModuleID string
 
@@ -33,6 +35,14 @@ const (
 	ModuleSetAttributes                     = "SetAttributes"
 	ModuleInvokeExternalResource            = "InvokeExternalResource"
 	ModuleCheckHoursOfOperation             = "CheckHoursOfOperation"
+)
+
+// Known types of block no longer in use in new flows.
+const (
+	ModuleDeprecatedSetScreenPop       ModuleType = "SetScreenPop"
+	ModuleDeprecatedStoreCustomerInput            = "StoreCustomerInput"
+	ModuleDeprecatedPlayAudio                     = "PlayAudio"
+	ModuleDeprecatedTransferToFlow                = "TransferToFlow"
 )
 
 // Values used in the module's target field.
@@ -98,7 +108,7 @@ type Module struct {
 	Type       ModuleType          `json:"type"`
 	Branches   ModuleBranchList    `json:"branches"`
 	Parameters ModuleParameterList `json:"parameters"`
-	Metadata   ModuleMetadata      `json:"metadata"`
+	Metadata   json.RawMessage     `json:"metadata"`
 	Target     ModuleTarget        `json:"target"`
 }
 
@@ -132,7 +142,7 @@ func (mbl ModuleBranchList) List(named ModuleBranchCondition) []ModuleBranch {
 type ModuleBranch struct {
 	Condition      ModuleBranchCondition     `json:"condition"`
 	ConditionType  ModuleBranchConditionType `json:"conditionType"`
-	ConditionValue string                    `json:"conditionValue"`
+	ConditionValue interface{}               `json:"conditionValue"`
 	Transition     ModuleID                  `json:"transition"`
 }
 
@@ -175,10 +185,6 @@ type ModuleParameter struct {
 	Namespace *ModuleParameterNamespace `json:"namespace"`
 	// Optional. Gives a friendly name to ARNs set in Value.
 	ResourceName string `json:"resourceName"`
-}
-
-// ModuleMetadata holds metadata about a block.
-type ModuleMetadata struct {
 }
 
 // KeyValue represents the parsed value of key-value parameter.

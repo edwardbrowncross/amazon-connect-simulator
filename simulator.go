@@ -29,9 +29,10 @@ func New() Simulator {
 
 // LoadFlow loads an unmarshalled call flow into the simulator.
 // Do this with all flows that form part of your call flows before starting a call.
-func (cs *Simulator) LoadFlow(flow flow.Flow) {
-	cs.flows[flow.Metadata.Name] = flow
-	for _, m := range flow.Modules {
+func (cs *Simulator) LoadFlow(f flow.Flow) {
+	f = flow.Dedeprecate(f)
+	cs.flows[f.Metadata.Name] = f
+	for _, m := range f.Modules {
 		cs.modules[m.ID] = m
 	}
 }
