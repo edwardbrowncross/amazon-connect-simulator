@@ -43,6 +43,7 @@ const (
 	ModuleDeprecatedStoreCustomerInput            = "StoreCustomerInput"
 	ModuleDeprecatedPlayAudio                     = "PlayAudio"
 	ModuleDeprecatedTransferToFlow                = "TransferToFlow"
+	ModuleDeprecatedCustomerInQueue               = "CustomerInQueue"
 )
 
 // Values used in the module's target field.

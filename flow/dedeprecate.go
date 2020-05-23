@@ -1,6 +1,8 @@
 package flow
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // Dedeprecate removes deprecated modules from a flow and replaces them with the current equivalent.
 func Dedeprecate(flow Flow) Flow {
@@ -41,6 +43,28 @@ func Dedeprecate(flow Flow) Flow {
 			}
 			mod.Target = TargetFlow
 			flow.Modules[i] = mod
+		case ModuleDeprecatedCustomerInQueue:
+			mod.Type = ModuleTransfer
+			mod.Target = TargetQueue
+			flow.Modules[i] = mod
+		case ModuleSetQueue:
+			if mod.Target == ModuleSetQueue || mod.Parameters.Get("Queue") != nil && mod.Parameters.Get("Queue").ResourceName == "" {
+				var metadata struct {
+					Queue struct {
+						Text string `json:"text"`
+					} `json:"queue"`
+				}
+				err := json.Unmarshal(mod.Metadata, &metadata)
+				if err != nil {
+					continue
+				}
+				q := mod.Parameters.Get("Queue")
+				q.ResourceName = metadata.Queue.Text
+				mod.Parameters = ModuleParameterList{
+					*q,
+				}
+				flow.Modules[i] = mod
+			}
 		}
 	}
 	return flow

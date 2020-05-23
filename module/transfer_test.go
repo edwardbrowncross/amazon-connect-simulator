@@ -85,6 +85,17 @@ func TestTransfer(t *testing.T) {
 			},
 		},
 		{
+			desc:   "no queue set",
+			module: jsonQueueOK,
+			state: testCallState{
+				system: map[string]string{},
+			}.init(),
+			exp: "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{
+				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
+			},
+		},
+		{
 			desc:   "success - flow",
 			module: jsonFlowOK,
 			state: testCallState{

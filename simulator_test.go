@@ -262,7 +262,7 @@ func TestSimulator(t *testing.T) {
 		assert func(expect *TestHelper)
 	}{
 		{
-			desc: "",
+			desc: "data entry",
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *TestHelper) {
 				expect.MessageContaining("2 to securely enter content")
@@ -271,6 +271,16 @@ func TestSimulator(t *testing.T) {
 				expect.MessageContaining("Please enter your credit card number")
 				expect.ToEnter("1234098712340987#")
 				expect.TransferToFlow("Sample inbound flow (first contact experience)")
+			},
+		},
+		{
+			desc: "queue transfer",
+			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
+			assert: func(expect *TestHelper) {
+				expect.MessageContaining("4 to set a screen pop for the agent")
+				expect.ToEnter("4")
+				expect.Message("This sets a note attribute for use in a screenpop.")
+				expect.TransferToQueue("BasicQueue")
 			},
 		},
 	}

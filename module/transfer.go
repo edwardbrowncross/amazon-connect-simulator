@@ -30,6 +30,9 @@ func (m transfer) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	case flow.TargetQueue:
 		call.Emit(event.NewModuleEvent(flow.Module(m)))
 		queue := call.GetSystem(string(flow.SystemQueueName))
+		if qs, ok := queue.(string); !ok || qs == "" {
+			return m.Branches.GetLink(flow.BranchError), nil
+		}
 		arn := call.GetSystem(string(flow.SystemQueueARN))
 		call.Emit(event.QueueTransferEvent{QueueARN: arn.(string), QueueName: queue.(string)})
 		return nil, nil

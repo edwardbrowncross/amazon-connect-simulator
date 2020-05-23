@@ -118,7 +118,6 @@ func (th *TestHelper) ToEnter(input string) {
 	default:
 		break
 	}
-	th.cancelReady()
 }
 
 // Message asserts that one of the following speech output matches the given string.
@@ -182,6 +181,44 @@ func (m promptPartialMatcher) match(evt event.Event) (match bool, pass bool, got
 
 func (m promptPartialMatcher) expected() string {
 	return fmt.Sprintf("to get prompt containing '%s'", m.text)
+}
+
+type queueTransferMatcher struct {
+	queueName string
+}
+
+func (m queueTransferMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.TransferQueueType {
+		return false, false, ""
+	}
+	e := evt.(event.QueueTransferEvent)
+	match = true
+	got = e.QueueName
+	pass = bool(e.QueueName == m.queueName)
+	return
+}
+
+func (m queueTransferMatcher) expected() string {
+	return fmt.Sprintf("to be transfered to queue '%s'", m.queueName)
+}
+
+type flowTransferMatcher struct {
+	flowName string
+}
+
+func (m flowTransferMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.TransferFlowType {
+		return false, false, ""
+	}
+	e := evt.(event.FlowTransferEvent)
+	match = true
+	got = e.FlowName
+	pass = bool(e.FlowName == m.flowName)
+	return
+}
+
+func (m flowTransferMatcher) expected() string {
+	return fmt.Sprintf("to be transfered to flow '%s'", m.flowName)
 }
 
 func toggleChannel() (value <-chan bool, toggle chan<- bool) {
