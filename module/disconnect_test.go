@@ -35,10 +35,7 @@ func TestDisconnect(t *testing.T) {
 			desc:   "success",
 			module: jsonOK,
 			exp:    "",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Disconnect"},
-				event.DisconnectEvent{},
-			},
+			expEvt: []event.Event{},
 		},
 	}
 	for _, tC := range testCases {

@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -28,7 +27,6 @@ func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return
 	}
-	call.Emit(event.NewModuleEvent(flow.Module(m)))
 	if p.Text == "" {
 		return m.Branches.GetLink(flow.BranchError), nil
 	}
@@ -36,11 +34,7 @@ func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return
 	}
-	call.Emit(event.PromptEvent{
-		Text: txt,
-		SSML: p.TextToSpeechType == "ssml",
-	})
-	call.Send(txt)
+	call.Send(txt, p.TextToSpeechType == "ssml")
 	md, err := strconv.Atoi(p.MaxDigits)
 	if err != nil {
 		return nil, fmt.Errorf("invalid MaxDigits: %s", p.MaxDigits)
@@ -49,10 +43,6 @@ func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid Timeout: %s", p.Timeout)
 	}
-	call.Emit(event.InputEvent{
-		MaxDigits: md,
-		Timeout:   time.Duration(tm) * time.Second,
-	})
 	in := call.Receive(md, time.Duration(tm)*time.Second)
 	if in == nil {
 		return m.Branches.GetLink(flow.BranchTimeout), nil

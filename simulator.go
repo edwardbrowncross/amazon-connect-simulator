@@ -107,11 +107,11 @@ func (cs *simulatorConnector) GetFlowStart(flowName string) *flow.ModuleID {
 	return &f.Start
 }
 
-// GetRunner finds the block with the given ID and wraps in the module providing its functionality.
-func (cs *simulatorConnector) GetRunner(moduleID flow.ModuleID) module.Runner {
+// GetModule finds the block with the given ID.
+func (cs *simulatorConnector) GetModule(moduleID flow.ModuleID) *flow.Module {
 	m, ok := cs.modules[moduleID]
 	if !ok {
 		return nil
 	}
-	return module.MakeRunner(m)
+	return &m
 }

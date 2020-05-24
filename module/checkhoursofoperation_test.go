@@ -40,9 +40,7 @@ func TestCheckHoursOfOperation(t *testing.T) {
 			desc:   "success",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000001",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckHoursOfOperation"},
-			},
+			expEvt: []event.Event{},
 		},
 	}
 	for _, tC := range testCases {

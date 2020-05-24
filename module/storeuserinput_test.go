@@ -95,9 +95,7 @@ func TestStoreUserInput(t *testing.T) {
 				},
 			}.init(),
 			expErr: `unknown namespace: Clock`,
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "StoreUserInput"},
-			},
+			expEvt: []event.Event{},
 		},
 		{
 			desc:   "timeout",
@@ -108,12 +106,8 @@ func TestStoreUserInput(t *testing.T) {
 					"prompt": "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "StoreUserInput"},
-				event.PromptEvent{Text: "<speak>Please enter digits 1 and 3 of your passcode.</speak>", SSML: true},
-				event.InputEvent{Timeout: 7 * time.Second, MaxDigits: 8},
-			},
+			exp:       "00000000-0000-4000-0000-000000000002",
+			expEvt:    []event.Event{},
 			expPrompt: "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 		},
 		{
@@ -133,11 +127,7 @@ func TestStoreUserInput(t *testing.T) {
 			expPrompt:     "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 			expRcvCount:   8,
 			expRcvTimeout: 7 * time.Second,
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "StoreUserInput"},
-				event.PromptEvent{Text: "<speak>Please enter digits 1 and 3 of your passcode.</speak>", SSML: true},
-				event.InputEvent{Timeout: 7 * time.Second, MaxDigits: 8},
-			},
+			expEvt:        []event.Event{},
 		},
 	}
 	for _, tC := range testCases {

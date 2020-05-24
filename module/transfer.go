@@ -20,15 +20,13 @@ func (m transfer) Run(call CallConnector) (next *flow.ModuleID, err error) {
 		if cfid == nil {
 			return nil, errors.New("missing ContactFlowId parameter")
 		}
-		call.Emit(event.NewModuleEvent(flow.Module(m)))
 		next = call.GetFlowStart(cfid.ResourceName)
 		if next == nil {
 			return m.Branches.GetLink(flow.BranchError), nil
 		}
 		call.Emit(event.FlowTransferEvent{FlowARN: cfid.Value.(string), FlowName: cfid.ResourceName})
-		return
+		return nil, nil
 	case flow.TargetQueue:
-		call.Emit(event.NewModuleEvent(flow.Module(m)))
 		queue := call.GetSystem(string(flow.SystemQueueName))
 		if qs, ok := queue.(string); !ok || qs == "" {
 			return m.Branches.GetLink(flow.BranchError), nil

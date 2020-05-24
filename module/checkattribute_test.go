@@ -82,9 +82,7 @@ func TestCheckAttribute(t *testing.T) {
 			module: jsonBadCondition,
 			state:  testCallState{}.init(),
 			exp:    "",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
-			},
+			expEvt: []event.Event{},
 			expErr: "unhandled condition type: StartsWith",
 		},
 		{
@@ -95,10 +93,8 @@ func TestCheckAttribute(t *testing.T) {
 					"securityAttempts": "3",
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000001",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{},
 		},
 		{
 			desc:   "numeric comparison no match",
@@ -108,10 +104,8 @@ func TestCheckAttribute(t *testing.T) {
 					"securityAttempts": "10",
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{},
 		},
 		{
 			desc:   "string comparison match",
@@ -121,10 +115,8 @@ func TestCheckAttribute(t *testing.T) {
 					flow.SystemQueueName: "complaints",
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000001",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{},
 		},
 		{
 			desc:   "string comparison no match",
@@ -134,10 +126,8 @@ func TestCheckAttribute(t *testing.T) {
 					flow.SystemQueueName: "sales",
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "CheckAttribute"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{},
 		},
 	}
 	for _, tC := range testCases {

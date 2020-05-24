@@ -79,9 +79,7 @@ func TestGetUserInput(t *testing.T) {
 			desc:   "bad json path",
 			module: jsonBadPath,
 			expErr: "unknown namespace: Restaurant",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
-			},
+			expEvt: []event.Event{},
 		},
 		{
 			desc:   "parameter reference missing",
@@ -93,9 +91,7 @@ func TestGetUserInput(t *testing.T) {
 				},
 			}.init(),
 			expPrompt: "",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
-			},
+			expEvt:    []event.Event{},
 		},
 		{
 			desc:   "matching entry",
@@ -111,11 +107,7 @@ func TestGetUserInput(t *testing.T) {
 			expPrompt:     "<speak>Enter a number, Dr Customer</speak>",
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
-				event.PromptEvent{Text: "<speak>Enter a number, Dr Customer</speak>", SSML: true},
-				event.InputEvent{Timeout: 5 * time.Second, MaxDigits: 1},
-			},
+			expEvt:        []event.Event{},
 		},
 		{
 			desc:   "mismatched entry",
@@ -130,11 +122,7 @@ func TestGetUserInput(t *testing.T) {
 			expPrompt:     "<speak>Enter a number</speak>",
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
-				event.PromptEvent{Text: "<speak>Enter a number</speak>", SSML: true},
-				event.InputEvent{Timeout: 5 * time.Second, MaxDigits: 1},
-			},
+			expEvt:        []event.Event{},
 		},
 		{
 			desc:   "timeout",
@@ -148,11 +136,7 @@ func TestGetUserInput(t *testing.T) {
 			expPrompt:     "<speak>Enter a number</speak>",
 			expRcvCount:   1,
 			expRcvTimeout: 5 * time.Second,
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "43dcc4f2-3392-4a38-90ed-0216f8594ea8", ModuleType: "GetUserInput"},
-				event.PromptEvent{Text: "<speak>Enter a number</speak>", SSML: true},
-				event.InputEvent{Timeout: 5 * time.Second, MaxDigits: 1},
-			},
+			expEvt:        []event.Event{},
 		},
 	}
 	for _, tC := range testCases {

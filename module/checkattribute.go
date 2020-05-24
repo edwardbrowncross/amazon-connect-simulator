@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
@@ -25,7 +24,6 @@ func (m checkAttribute) Run(call CallConnector) (next *flow.ModuleID, err error)
 	if err != nil {
 		return
 	}
-	call.Emit(event.NewModuleEvent(flow.Module(m)))
 	v, err := pr.get(flow.ModuleParameterNamespace(p.Namespace), p.Attribute)
 	if err != nil {
 		return

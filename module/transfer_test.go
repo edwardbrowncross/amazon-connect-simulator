@@ -79,10 +79,8 @@ func TestTransfer(t *testing.T) {
 			state: testCallState{
 				flowStart: map[string]flow.ModuleID{},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{},
 		},
 		{
 			desc:   "no queue set",
@@ -90,10 +88,8 @@ func TestTransfer(t *testing.T) {
 			state: testCallState{
 				system: map[string]string{},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{},
 		},
 		{
 			desc:   "success - flow",
@@ -105,7 +101,6 @@ func TestTransfer(t *testing.T) {
 			}.init(),
 			exp: "00000000-0000-4000-0000-000000000001",
 			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
 				event.FlowTransferEvent{FlowName: "Security", FlowARN: "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/contact-flow/ffffffff-0000-4000-0000-ffffffff0001"},
 			},
 		},
@@ -120,7 +115,6 @@ func TestTransfer(t *testing.T) {
 			}.init(),
 			exp: "",
 			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "Transfer"},
 				event.QueueTransferEvent{QueueName: "complaints", QueueARN: "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001"},
 			},
 		},

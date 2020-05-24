@@ -54,9 +54,7 @@ func TestSetQueue(t *testing.T) {
 				string(flow.SystemQueueARN):  "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001",
 				string(flow.SystemQueueName): "Complaints",
 			},
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "55c7b51c-ab55-4c63-ac42-235b4a0f904f", ModuleType: "SetQueue"},
-			},
+			expEvt: []event.Event{},
 		},
 	}
 	for _, tC := range testCases {

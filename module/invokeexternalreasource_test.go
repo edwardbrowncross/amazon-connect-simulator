@@ -108,10 +108,8 @@ func TestInvokeExternalResource(t *testing.T) {
 					"arn:aws:lambda:eu-west-2:456789012345:function:a-different-lambda": func() {},
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{},
 			expErr: "",
 		},
 		{
@@ -124,10 +122,8 @@ func TestInvokeExternalResource(t *testing.T) {
 					},
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{},
 			expErr: "",
 		},
 		{
@@ -140,10 +136,8 @@ func TestInvokeExternalResource(t *testing.T) {
 					},
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000002",
+			expEvt: []event.Event{},
 			expErr: "",
 		},
 		{
@@ -176,10 +170,8 @@ func TestInvokeExternalResource(t *testing.T) {
 					},
 				},
 			}.init(),
-			exp: "00000000-0000-4000-0000-000000000001",
-			expEvt: []event.Event{
-				event.ModuleEvent{ID: "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e", ModuleType: "InvokeExternalResource"},
-			},
+			exp:    "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{},
 			expErr: "",
 		},
 	}

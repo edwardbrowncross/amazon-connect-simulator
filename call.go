@@ -7,6 +7,7 @@ import (
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
+	"github.com/edwardbrowncross/amazon-connect-simulator/module"
 )
 
 // Call is used to interact with an ongoing call.
@@ -65,15 +66,31 @@ loop:
 				break loop
 			}
 		default:
-			m := cs.GetRunner(*next)
-			next, err = m.Run(&cs)
+			m := cs.GetModule(*next)
+			if m == nil {
+				err = fmt.Errorf("missing module: %v", *next)
+			}
+			c.emit(event.NewModuleEvent(*m))
+			next, err = module.MakeRunner(*m).Run(&cs)
 		}
 	}
+	c.emit(event.DisconnectEvent{})
 	c.Err = err
 	close(c.o)
 	c.evtsMutex.Lock()
 	for _, ch := range c.evts {
 		close(ch)
+	}
+	c.evtsMutex.Unlock()
+}
+
+func (c *Call) emit(event event.Event) {
+	c.evtsMutex.Lock()
+	for _, evt := range c.evts {
+		select {
+		case evt <- event:
+		default:
+		}
 	}
 	c.evtsMutex.Unlock()
 }
@@ -98,13 +115,21 @@ type callConnector struct {
 	*simulatorConnector
 }
 
-func (s *callConnector) Send(msg string) {
+func (s *callConnector) Send(msg string, ssml bool) {
+	s.emit(event.PromptEvent{
+		Text: msg,
+		SSML: ssml,
+	})
 	s.o <- msg
 }
 
 // Receive waits for a number of characters to be input.
 // If the first character is not received before the timeout time, it returns nil.
-func (s *callConnector) Receive(count int, timeout time.Duration) *string {
+func (s *callConnector) Receive(maxDigits int, timeout time.Duration) *string {
+	s.emit(event.InputEvent{
+		MaxDigits: maxDigits,
+		Timeout:   timeout,
+	})
 	got := []rune{}
 	select {
 	case <-time.After(timeout):
@@ -115,7 +140,7 @@ func (s *callConnector) Receive(count int, timeout time.Duration) *string {
 		}
 		got = append(got, in)
 	}
-	for len(got) < count && got[len(got)-1] != '#' {
+	for len(got) < maxDigits && got[len(got)-1] != '#' {
 		got = append(got, <-s.i)
 	}
 	r := string(got)
@@ -170,12 +195,5 @@ func (s *callConnector) ClearExternal() {
 }
 
 func (s *callConnector) Emit(event event.Event) {
-	s.evtsMutex.Lock()
-	for _, evt := range s.evts {
-		select {
-		case evt <- event:
-		default:
-		}
-	}
-	s.evtsMutex.Unlock()
+	s.emit(event)
 }

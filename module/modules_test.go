@@ -12,9 +12,10 @@ import (
 )
 
 type testCallState struct {
-	i   string
-	o   string
-	rcv struct {
+	i     string
+	o     string
+	oSSML bool
+	rcv   struct {
 		count   int
 		timeout time.Duration
 	}
@@ -46,8 +47,9 @@ func (st testCallState) init() *testCallState {
 	return &st
 }
 
-func (st *testCallState) Send(s string) {
+func (st *testCallState) Send(s string, ssml bool) {
 	st.o = s
+	st.oSSML = ssml
 }
 func (st *testCallState) Receive(count int, timeout time.Duration) *string {
 	st.rcv.count = count
