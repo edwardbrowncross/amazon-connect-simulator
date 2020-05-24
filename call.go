@@ -1,6 +1,7 @@
 package simulator
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -207,4 +208,14 @@ func (s *callConnector) ClearExternal() {
 
 func (s *callConnector) Emit(event event.Event) {
 	s.emit(event)
+}
+
+func (s *callConnector) InvokeLambda(named string, params json.RawMessage) (out string, outErr error, err error) {
+	payloadIn := LambdaPayload{
+		Details: lambdaPayloadDetails{
+			Parameters: params,
+		},
+	}
+	jsonIn, _ := json.Marshal(payloadIn)
+	return s.simulatorConnector.InvokeLambda(named, string(jsonIn))
 }

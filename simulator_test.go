@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
-	"github.com/edwardbrowncross/amazon-connect-simulator/module"
 )
 
 var sampleWelcome = `{
@@ -200,7 +199,7 @@ func TestSimulator(t *testing.T) {
 	}
 
 	// Register a lambda.
-	err = sim.RegisterLambda("state-lookup", func(ctx context.Context, in module.LambdaPayload) (out stateLookupOutput, err error) {
+	err = sim.RegisterLambda("state-lookup", func(ctx context.Context, in LambdaPayload) (out stateLookupOutput, err error) {
 		return stateLookupOutput{
 			State: "United Kingdom",
 		}, nil

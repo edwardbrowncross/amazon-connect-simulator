@@ -1,12 +1,14 @@
 package simulator
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
-	"github.com/edwardbrowncross/amazon-connect-simulator/module"
 )
 
 // Simulator is capable of starting new simulated call flows.
@@ -56,7 +58,7 @@ func (cs *Simulator) LoadFlowJSON(bytes []byte) error {
 // fn is function like handle(context.Context, struct) (struct, error). It will be passed an Amazon Connect lambda event.
 // You must specify a function for each external lambda invocation before starting a simulated call.
 func (cs *Simulator) RegisterLambda(name string, fn interface{}) error {
-	err := module.ValidateLambda(fn)
+	err := validateLambda(fn)
 	if err != nil {
 		return err
 	}
@@ -127,4 +129,31 @@ func (cs *simulatorConnector) GetModule(moduleID flow.ModuleID) *flow.Module {
 
 func (cs *simulatorConnector) Encrypt(in string) string {
 	return cs.encrypt(in)
+}
+
+func (cs *simulatorConnector) InvokeLambda(named string, withJSON string) (outJSON string, outErr error, err error) {
+	fn := cs.GetLambda(named)
+	if fn == nil {
+		return "", nil, fmt.Errorf("unknown lambda: %s", named)
+	}
+	fnv := reflect.ValueOf(fn)
+	inputt := reflect.TypeOf(fn).In(1)
+	in := reflect.New(inputt)
+	err = json.Unmarshal([]byte(withJSON), in.Interface())
+	if err != nil {
+		return
+	}
+	response := fnv.Call([]reflect.Value{
+		reflect.ValueOf(context.Background()),
+		in.Elem(),
+	})
+	if outErr, ok := response[1].Interface().(error); ok && outErr != nil {
+		return "", outErr, nil
+	}
+	out, err := json.Marshal(response[0].Interface())
+	if err != nil {
+		return
+	}
+	outJSON = string(out)
+	return
 }

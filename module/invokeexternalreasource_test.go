@@ -1,7 +1,6 @@
 package module
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -77,13 +76,15 @@ func TestInvokeExternalResource(t *testing.T) {
 		V string `json:"newCount"`
 	}
 	testCases := []struct {
-		desc        string
-		module      string
-		state       *testCallState
-		exp         string
-		expExternal map[string]string
-		expEvt      []event.Event
-		expErr      string
+		desc           string
+		module         string
+		state          *testCallState
+		exp            string
+		expExternal    map[string]string
+		expEvt         []event.Event
+		expLambdaName  string
+		expLambdaInput string
+		expErr         string
 	}{
 		{
 			desc:   "wrong module",
@@ -102,43 +103,38 @@ func TestInvokeExternalResource(t *testing.T) {
 		},
 		{
 			desc:   "missing lambda",
-			module: jsonOK,
-			state: testCallState{
-				lambda: map[string]interface{}{
-					"arn:aws:lambda:eu-west-2:456789012345:function:a-different-lambda": func() {},
-				},
-			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{},
-			expErr: "",
-		},
-		{
-			desc:   "bad lambda signature",
 			module: jsonOKNoParams,
 			state: testCallState{
-				lambda: map[string]interface{}{
-					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(string) error {
-						return nil
-					},
-				},
+				lambdaErr: errors.New("lambda not found"),
 			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{},
-			expErr: "",
+			expLambdaName:  "arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn",
+			expLambdaInput: `{}`,
+			exp:            "00000000-0000-4000-0000-000000000002",
+			expEvt:         []event.Event{},
+			expErr:         "",
 		},
 		{
 			desc:   "lambda error",
 			module: jsonOKNoParams,
 			state: testCallState{
-				lambda: map[string]interface{}{
-					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(c context.Context, evt LambdaPayload) (out testLambdaOutput, err error) {
-						return out, errors.New("something went wrong")
-					},
-				},
+				lambdaOutErr: errors.New("failed to do a thing"),
 			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000002",
-			expEvt: []event.Event{},
-			expErr: "",
+			expLambdaName:  "arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn",
+			expLambdaInput: `{}`,
+			exp:            "00000000-0000-4000-0000-000000000002",
+			expEvt:         []event.Event{},
+			expErr:         "",
+		},
+		{
+			desc:   "json unmarshal error (not anticipated)",
+			module: jsonOKNoParams,
+			state: testCallState{
+				lambdaOut: `<xml />`,
+			}.init(),
+			expLambdaName:  "arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn",
+			expLambdaInput: `{}`,
+			expEvt:         []event.Event{},
+			expErr:         "failed to unmarshal json from lambda: <xml />",
 		},
 		{
 			desc:   "success",
@@ -150,28 +146,15 @@ func TestInvokeExternalResource(t *testing.T) {
 				external: map[string]string{
 					"count": "4",
 				},
-				lambda: map[string]interface{}{
-					"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn": func(c context.Context, evt LambdaPayload) (out testLambdaOutput, err error) {
-						in := testLambdaInput{}
-						err = json.Unmarshal(evt.Details.Parameters, &in)
-						if err != nil {
-							t.Errorf("unexpectedly failed to unmarshal input: %s", evt.Details.Parameters)
-							return
-						}
-						if in.C != "4" {
-							t.Errorf("expected input count of 4 but got %s", in.C)
-						}
-						if in.I != "12345" {
-							t.Errorf("expected input digits of 12345 but got %s", in.I)
-						}
-						return testLambdaOutput{
-							V: "5",
-						}, nil
-					},
-				},
+				lambdaOut: `{"newCount": 5}`,
 			}.init(),
-			exp:    "00000000-0000-4000-0000-000000000001",
-			expEvt: []event.Event{},
+			expLambdaName:  "arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn",
+			expLambdaInput: `{"input":"12345","prevCount":"4"}`,
+			exp:            "00000000-0000-4000-0000-000000000001",
+			expEvt:         []event.Event{},
+			expExternal: map[string]string{
+				"newCount": "5",
+			},
 			expErr: "",
 		},
 	}
@@ -201,73 +184,17 @@ func TestInvokeExternalResource(t *testing.T) {
 			if nextStr != tC.exp {
 				t.Errorf("expected next of '%s' but got '%v'", tC.exp, *next)
 			}
+			if tC.expLambdaName != state.lambdaIn.name {
+				t.Errorf("expected to call lambda with ARN '%s' but called '%s'", tC.expLambdaName, state.lambdaIn.name)
+			}
+			if tC.expLambdaInput != string(state.lambdaIn.input) {
+				t.Errorf("expected to call lambda with input of '%s' but called '%s'", tC.expLambdaInput, state.lambdaIn.input)
+			}
 			if tC.expExternal != nil && !reflect.DeepEqual(tC.expExternal, state.external) {
 				t.Errorf("expected external to be:\n%v\nbut it was \n%v", tC.expExternal, state.external)
 			}
 			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
 				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
-			}
-		})
-	}
-}
-
-func TestValidateLambda(t *testing.T) {
-	type testLambdaOutput struct{}
-	testCases := []struct {
-		desc string
-		fn   interface{}
-		exp  string
-	}{
-		{
-			desc: "not a function",
-			fn:   testCallState{}.init(),
-			exp:  "wanted function but got ptr",
-		},
-		{
-			desc: "one input",
-			fn:   func(LambdaPayload) (o testLambdaOutput, e error) { return },
-			exp:  "expected function to take 2 parameters but it takes 1",
-		},
-		{
-			desc: "first parameter not context",
-			fn:   func(interface{}, LambdaPayload) (o testLambdaOutput, e error) { return },
-			exp:  "expected first argument to be a context.Context",
-		},
-		{
-			desc: "second parameter not struct",
-			fn:   func(context.Context, string) (o testLambdaOutput, e error) { return },
-			exp:  "expected second argument to be struct but it was: string",
-		},
-		{
-			desc: "only one return",
-			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput) { return },
-			exp:  "expected function to return 2 elements but it returns 1",
-		},
-		{
-			desc: "first return not a struct",
-			fn:   func(context.Context, LambdaPayload) (s string, e error) { return },
-			exp:  "expected first return to be struct but it was: string",
-		},
-		{
-			desc: "second return not an error",
-			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput, e string) { return },
-			exp:  "expected second return to be an error",
-		},
-		{
-			desc: "success",
-			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput, e error) { return },
-			exp:  "",
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			err := ValidateLambda(tC.fn)
-			errStr := ""
-			if err != nil {
-				errStr = err.Error()
-			}
-			if errStr != tC.exp {
-				t.Errorf("expected error of '%s' but got '%s'", tC.exp, errStr)
 			}
 		})
 	}

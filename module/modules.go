@@ -1,6 +1,7 @@
 package module
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
@@ -19,7 +20,7 @@ type CallConnector interface {
 	SetContactData(key string, value interface{})
 	GetSystem(key string) interface{}
 	SetSystem(key string, value interface{})
-	GetLambda(named string) interface{}
+	InvokeLambda(named string, inParams json.RawMessage) (outJSON string, outErr error, err error)
 	GetFlowStart(flowName string) *flow.ModuleID
 }
 
