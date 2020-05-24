@@ -11,12 +11,13 @@ type Type string
 
 // These are the types of event prevent by this package.
 const (
-	ModuleType        Type = "Module"
-	PromptType             = "Prompt"
-	InputType              = "Type"
-	TransferQueueType      = "TransferQueue"
-	TransferFlowType       = "TransferFlow"
-	DisconnectType         = "Disconnect"
+	ModuleType            Type = "Module"
+	PromptType                 = "Prompt"
+	InputType                  = "Type"
+	TransferQueueType          = "TransferQueue"
+	TransferFlowType           = "TransferFlow"
+	DisconnectType             = "Disconnect"
+	UpdateContactDataType      = "UpdateContactData"
 )
 
 // Event is an event describing activity in an ongoing call.
@@ -93,4 +94,15 @@ type DisconnectEvent struct{}
 // Type returns DisconnectType.
 func (e DisconnectEvent) Type() Type {
 	return DisconnectType
+}
+
+// UpdateContactDataEvent is emitted when a field in the user data is set or updated.
+type UpdateContactDataEvent struct {
+	Key   string
+	Value string
+}
+
+// Type returns UpdateContactDataType.
+func (e UpdateContactDataEvent) Type() Type {
+	return UpdateContactDataType
 }

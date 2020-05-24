@@ -51,6 +51,7 @@ func NewTestHelper(t *testing.T, c *Call) *TestHelper {
 				case event.DisconnectType, event.InputType, event.TransferQueueType:
 					readyToggle <- true
 				case event.ModuleType:
+					fmt.Println(evt.(event.ModuleEvent).ModuleType)
 					fallthrough
 				default:
 					readyToggle <- false
@@ -82,21 +83,22 @@ func (th *TestHelper) run(m matcher) {
 			continue
 		}
 		if pass {
-			th.evts = th.evts[i:]
+			th.evts = th.evts[i+1:]
 			return
 		}
 		gots = append(gots, got)
 	}
 	if len(gots) == 0 {
-		gots = append(gots, "nothing")
+		th.t.Errorf("expected %s. Got nothing.", m.expected())
+	} else {
+		th.t.Errorf("expected %s. Got: \n%v.", m.expected(), strings.Join(gots, "\n"))
 	}
-	th.t.Errorf("expected %s. Got: \n%v.", m.expected(), strings.Join(gots, "\n"))
 	if !ok {
 		if th.c.Err != nil {
 			th.t.Fatalf("call ended with error: %v", th.c.Err)
 		} else {
 			th.t.Fatal("call terminated unexpectedly")
-}
+		}
 	}
 }
 
@@ -138,6 +140,11 @@ func (th *TestHelper) TransferToQueue(named string) {
 // TransferToFlow asserts that the call moved to the flow with the given name.
 func (th *TestHelper) TransferToFlow(named string) {
 	th.run(flowTransferMatcher{named})
+}
+
+// UserAttributeUpdate asserts that a key, value pair was set in the user attributes.
+func (th *TestHelper) UserAttributeUpdate(key string, value string) {
+	th.run(updateContactDataMatcher{key, value})
 }
 
 type matcher interface {
@@ -219,6 +226,26 @@ func (m flowTransferMatcher) match(evt event.Event) (match bool, pass bool, got 
 
 func (m flowTransferMatcher) expected() string {
 	return fmt.Sprintf("to be transfered to flow '%s'", m.flowName)
+}
+
+type updateContactDataMatcher struct {
+	key   string
+	value string
+}
+
+func (m updateContactDataMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.UpdateContactDataType {
+		return false, false, ""
+	}
+	e := evt.(event.UpdateContactDataEvent)
+	match = true
+	got = fmt.Sprintf("%s='%s'", e.Key, e.Value)
+	pass = bool(e.Key == m.key && e.Value == m.value)
+	return
+}
+
+func (m updateContactDataMatcher) expected() string {
+	return fmt.Sprintf("to set %s field in contact data to '%s'", m.key, m.value)
 }
 
 func toggleChannel() (value <-chan bool, toggle chan<- bool) {

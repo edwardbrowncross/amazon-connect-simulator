@@ -25,7 +25,7 @@ func (m transfer) Run(call CallConnector) (next *flow.ModuleID, err error) {
 			return m.Branches.GetLink(flow.BranchError), nil
 		}
 		call.Emit(event.FlowTransferEvent{FlowARN: cfid.Value.(string), FlowName: cfid.ResourceName})
-		return nil, nil
+		return next, nil
 	case flow.TargetQueue:
 		queue := call.GetSystem(string(flow.SystemQueueName))
 		if qs, ok := queue.(string); !ok || qs == "" {

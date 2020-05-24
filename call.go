@@ -143,6 +143,9 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration) *string {
 	for len(got) < maxDigits && got[len(got)-1] != '#' {
 		got = append(got, <-s.i)
 	}
+	if got[len(got)-1] == '#' {
+		got = got[:len(got)-1]
+	}
 	r := string(got)
 	return &r
 }
@@ -154,6 +157,10 @@ func (s *callConnector) SetExternal(key string, value interface{}) {
 
 // SetContactData sets a value into the state machine.
 func (s *callConnector) SetContactData(key string, value interface{}) {
+	s.emit(event.UpdateContactDataEvent{
+		Key:   key,
+		Value: fmt.Sprintf("%v", value),
+	})
 	s.ContactData[key] = fmt.Sprintf("%v", value)
 }
 

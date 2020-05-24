@@ -270,6 +270,7 @@ func TestSimulator(t *testing.T) {
 				expect.Message("This flow enables users to enter information secured by an encryption key you provide.")
 				expect.MessageContaining("Please enter your credit card number")
 				expect.ToEnter("1234098712340987#")
+				expect.UserAttributeUpdate("EncryptedCreditCard", "1234098712340987")
 				expect.TransferToFlow("Sample inbound flow (first contact experience)")
 			},
 		},
