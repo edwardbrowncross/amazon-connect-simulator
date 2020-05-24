@@ -24,17 +24,6 @@ func TestGetUserInput(t *testing.T) {
 			{"name":"MaxDigits","value":"1"}
 		]
 	}`
-	jsonBadPath := `{
-		"id":"43dcc4f2-3392-4a38-90ed-0216f8594ea8",
-		"type":"GetUserInput",
-		"branches":[],
-		"parameters":[
-			{"name":"Text","value":"please select your $.Restaurant.mealType"},
-			{"name":"TextToSpeechType","value":"ssml"},
-			{"name":"Timeout","value":"5"},
-			{"name":"MaxDigits","value":"1"}
-		]
-	}`
 	jsonOK := `{
 		"id":"43dcc4f2-3392-4a38-90ed-0216f8594ea8",
 		"type":"GetUserInput",
@@ -74,12 +63,6 @@ func TestGetUserInput(t *testing.T) {
 			desc:   "missing parameter",
 			module: jsonBadParams,
 			expErr: "missing parameter Text",
-		},
-		{
-			desc:   "bad json path",
-			module: jsonBadPath,
-			expErr: "unknown namespace: Restaurant",
-			expEvt: []event.Event{},
 		},
 		{
 			desc:   "parameter reference missing",

@@ -32,18 +32,6 @@ func TestStoreUserInput(t *testing.T) {
 			{"name":"EncryptEntry","value":false}
 		]
 	}`
-	jsonBadPath := `{
-		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
-		"type":"StoreUserInput",
-		"branches":[],
-		"parameters":[
-			{"name":"Text","value":"prompt","namespace":"External"},
-			{"name":"Timeout","value":"5"},
-			{"name":"MaxDigits","value":8},
-			{"name":"TextToSpeechType","value":"text"},
-			{"name":"EncryptEntry","value":false}
-		]
-	}`
 	jsonOK := `{
 		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
 		"type":"StoreUserInput",
@@ -88,17 +76,6 @@ func TestStoreUserInput(t *testing.T) {
 			desc:   "bad timeout parameter",
 			module: jsonBadTimeout,
 			expErr: `strconv.Atoi: parsing "fishcake": invalid syntax`,
-		},
-		{
-			desc:   "bad json path",
-			module: jsonBadPath,
-			state: testCallState{
-				external: map[string]string{
-					"prompt": "Thanks for phoning $.Clock.time",
-				},
-			}.init(),
-			expErr: `unknown namespace: Clock`,
-			expEvt: []event.Event{},
 		},
 		{
 			desc:   "timeout",

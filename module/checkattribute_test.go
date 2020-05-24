@@ -43,6 +43,18 @@ func TestCheckAttribute(t *testing.T) {
 		"type":"CheckAttribute",
 		"parameters":[]
 	}`
+	jsonBadNamespace := `{
+		"id":"43dcc4f2-3392-4a38-90ed-0216f8594ea8",
+		"type":"CheckAttribute",
+		"branches":[
+			{"condition":"Evaluate","conditionType":"LessThanOrEqualTo","conditionValue":"3","transition":"00000000-0000-4000-0000-000000000001"},
+			{"condition":"NoMatch","transition":"00000000-0000-4000-0000-000000000002"}
+		],
+		"parameters":[
+			{"name":"Attribute","value":"securityAttempts"},
+			{"name":"Namespace","value":"S3"}
+		]
+	}`
 	jsonBadCondition := `{
 		"id":"43dcc4f2-3392-4a38-90ed-0216f8594ea8",
 		"type":"CheckAttribute",
@@ -76,6 +88,13 @@ func TestCheckAttribute(t *testing.T) {
 			state:  testCallState{}.init(),
 			exp:    "",
 			expErr: "missing parameter Namespace",
+		},
+		{
+			desc:   "bad namespace",
+			module: jsonBadNamespace,
+			state:  testCallState{}.init(),
+			exp:    "",
+			expErr: "unknown namespace: S3",
 		},
 		{
 			desc:   "unknown condition",

@@ -32,10 +32,7 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 	if err != nil {
 		return
 	}
-	txt, err := pr.jsonPath(p.Text)
-	if err != nil {
-		return
-	}
+	txt := pr.jsonPath(p.Text)
 	call.Send(txt, p.TextToSpeechType == "ssml")
 	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, p.EncryptEntry)
 	if entry == nil {

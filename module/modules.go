@@ -164,7 +164,7 @@ func (call parameterResolver) unmarshal(plist flow.ModuleParameterList, into int
 var jsonP = regexp.MustCompile(`\$\.([a-zA-Z]+)\.([0-9a-zA-Z_\-]+)`)
 
 // jsonPath takes a string like "you live in $.External.city" and interpolates the jsonPath components.
-func (call parameterResolver) jsonPath(msg string) (out string, err error) {
+func (call parameterResolver) jsonPath(msg string) (out string) {
 	out = jsonP.ReplaceAllStringFunc(msg, func(path string) (res string) {
 		bits := jsonP.FindSubmatch([]byte(path))
 		namespace := string(bits[1])
@@ -176,7 +176,7 @@ func (call parameterResolver) jsonPath(msg string) (out string, err error) {
 		case "External":
 			val = call.GetExternal(key)
 		default:
-			err = fmt.Errorf("unknown namespace: %s", namespace)
+			val = path
 		}
 		return fmt.Sprintf("%v", val)
 	})

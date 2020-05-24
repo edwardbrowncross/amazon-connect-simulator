@@ -23,10 +23,7 @@ func (m playPrompt) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if err != nil {
 		return
 	}
-	txt, err := pr.jsonPath(p.Text)
-	if err != nil {
-		return
-	}
+	txt := pr.jsonPath(p.Text)
 	call.Send(txt, p.TextToSpeechType == "ssml")
 	return m.Branches.GetLink(flow.BranchSuccess), nil
 }

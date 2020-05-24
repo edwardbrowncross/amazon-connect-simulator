@@ -18,7 +18,7 @@ func TestPlayPrompt(t *testing.T) {
 		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
 		"type":"PlayPrompt",
 		"branches":[{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"}],
-		"parameters":[{"name":"Text","value":"Thanks for your call $.Computer.name"}, {"name":"TextToSpeechType","value":"text"}]
+		"parameters":[{"name":"Text","value":"Thanks for your call, $.Computer.name."}, {"name":"TextToSpeechType","value":"text"}]
 	}`
 	jsonOK := `{
 		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
@@ -57,9 +57,11 @@ func TestPlayPrompt(t *testing.T) {
 			expErr: "missing parameter Text",
 		},
 		{
-			desc:   "bad JSON Path",
-			module: jsonBadPath,
-			expErr: "unknown namespace: Computer",
+			desc:    "bad JSON Path",
+			module:  jsonBadPath,
+			exp:     "00000000-0000-4000-0000-000000000001",
+			expOut:  "Thanks for your call, $.Computer.name.",
+			expSSML: false,
 		},
 		{
 			desc:    "success",
