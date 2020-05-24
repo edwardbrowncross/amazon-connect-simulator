@@ -125,7 +125,7 @@ func (s *callConnector) Send(msg string, ssml bool) {
 
 // Receive waits for a number of characters to be input.
 // If the first character is not received before the timeout time, it returns nil.
-func (s *callConnector) Receive(maxDigits int, timeout time.Duration) *string {
+func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bool) *string {
 	s.emit(event.InputEvent{
 		MaxDigits: maxDigits,
 		Timeout:   timeout,
@@ -146,7 +146,11 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration) *string {
 	if got[len(got)-1] == '#' {
 		got = got[:len(got)-1]
 	}
+
 	r := string(got)
+	if encrypt {
+		r = s.Encrypt(r)
+	}
 	return &r
 }
 

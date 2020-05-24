@@ -47,7 +47,7 @@ func MakeRunner(m flow.Module) Runner {
 // CallConnector describes what a module needs to interact with the ongoing call.
 type CallConnector interface {
 	Send(s string, ssml bool)
-	Receive(count int, timeout time.Duration) *string
+	Receive(count int, timeout time.Duration, encrypt bool) *string
 	Emit(event event.Event)
 	GetExternal(key string) interface{}
 	SetExternal(key string, value interface{})

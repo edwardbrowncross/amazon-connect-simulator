@@ -28,7 +28,8 @@ func TestStoreUserInput(t *testing.T) {
 			{"name":"Text","value":"prompt","namespace":"External"},
 			{"name":"Timeout","value":"fishcake"},
 			{"name":"MaxDigits","value":8},
-			{"name":"TextToSpeechType","value":"text"}
+			{"name":"TextToSpeechType","value":"text"},
+			{"name":"EncryptEntry","value":false}
 		]
 	}`
 	jsonBadPath := `{
@@ -39,7 +40,8 @@ func TestStoreUserInput(t *testing.T) {
 			{"name":"Text","value":"prompt","namespace":"External"},
 			{"name":"Timeout","value":"5"},
 			{"name":"MaxDigits","value":8},
-			{"name":"TextToSpeechType","value":"text"}
+			{"name":"TextToSpeechType","value":"text"},
+			{"name":"EncryptEntry","value":false}
 		]
 	}`
 	jsonOK := `{
@@ -55,7 +57,7 @@ func TestStoreUserInput(t *testing.T) {
 			{"name":"CustomerInputType","value":"Custom"},
 			{"name":"Timeout","value":"7"},
 			{"name":"MaxDigits","value":8},
-			{"name":"EncryptEntry","value":false},
+			{"name":"EncryptEntry","value":true},
 			{"name":"DisableCancel","value":true}
 		]
 	}`
@@ -69,6 +71,7 @@ func TestStoreUserInput(t *testing.T) {
 		expSys        map[string]string
 		expRcvTimeout time.Duration
 		expRcvCount   int
+		expRcvEncrypt bool
 		expEvt        []event.Event
 	}{
 		{
@@ -106,9 +109,10 @@ func TestStoreUserInput(t *testing.T) {
 					"prompt": "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 				},
 			}.init(),
-			exp:       "00000000-0000-4000-0000-000000000002",
-			expEvt:    []event.Event{},
-			expPrompt: "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
+			exp:           "00000000-0000-4000-0000-000000000002",
+			expEvt:        []event.Event{},
+			expPrompt:     "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
+			expRcvEncrypt: true,
 		},
 		{
 			desc:   "success",
@@ -128,6 +132,7 @@ func TestStoreUserInput(t *testing.T) {
 			expRcvCount:   8,
 			expRcvTimeout: 7 * time.Second,
 			expEvt:        []event.Event{},
+			expRcvEncrypt: true,
 		},
 	}
 	for _, tC := range testCases {
@@ -165,10 +170,13 @@ func TestStoreUserInput(t *testing.T) {
 				t.Errorf("expected prompt of '%s' but got '%s'", tC.expPrompt, state.o)
 			}
 			if tC.expRcvCount > 0 && state.rcv.count != tC.expRcvCount {
-				t.Errorf("expected receive count of %d but got %d", state.rcv.count, tC.expRcvCount)
+				t.Errorf("expected receive count of %d but got %d", tC.expRcvCount, state.rcv.count)
 			}
 			if tC.expRcvTimeout > 0 && state.rcv.timeout != tC.expRcvTimeout {
-				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
+				t.Errorf("expected receive timeout of %d but got %d", tC.expRcvTimeout, state.rcv.timeout)
+			}
+			if state.rcv.encrypt != tC.expRcvEncrypt {
+				t.Errorf("expected receive encrypt of %v but got %v", tC.expRcvEncrypt, state.rcv.encrypt)
 			}
 			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
 				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)

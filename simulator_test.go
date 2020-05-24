@@ -3,6 +3,7 @@ package simulator
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
@@ -234,6 +235,11 @@ func TestSimulator(t *testing.T) {
 		t.Fatalf("unexpected error setting starting flow: %v", err)
 	}
 
+	// Set a custom encryption function.
+	sim.SetEncryption(func(in string) string {
+		return fmt.Sprintf("(I am encrypting)>༼ つ ◕_◕ ༽つ%s", in)
+	})
+
 	// Start a call.
 	call, err = sim.StartCall(CallConfig{
 		SourceNumber: "+447878123456",
@@ -270,7 +276,7 @@ func TestSimulator(t *testing.T) {
 				expect.Message("This flow enables users to enter information secured by an encryption key you provide.")
 				expect.MessageContaining("Please enter your credit card number")
 				expect.ToEnter("1234098712340987#")
-				expect.UserAttributeUpdate("EncryptedCreditCard", "1234098712340987")
+				expect.UserAttributeUpdate("EncryptedCreditCard", "(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")
 				expect.TransferToFlow("Sample inbound flow (first contact experience)")
 			},
 		},

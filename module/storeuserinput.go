@@ -15,6 +15,7 @@ type storeUserInputParams struct {
 	Timeout          string
 	MaxDigits        int
 	TextToSpeechType string
+	EncryptEntry     bool
 }
 
 func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
@@ -36,7 +37,7 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 		return
 	}
 	call.Send(txt, p.TextToSpeechType == "ssml")
-	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second)
+	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, p.EncryptEntry)
 	if entry == nil {
 		next = m.Branches.GetLink(flow.BranchError)
 		return

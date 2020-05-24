@@ -18,6 +18,7 @@ type testCallState struct {
 	rcv   struct {
 		count   int
 		timeout time.Duration
+		encrypt bool
 	}
 	external    map[string]string
 	contactData map[string]string
@@ -51,9 +52,10 @@ func (st *testCallState) Send(s string, ssml bool) {
 	st.o = s
 	st.oSSML = ssml
 }
-func (st *testCallState) Receive(count int, timeout time.Duration) *string {
+func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool) *string {
 	st.rcv.count = count
 	st.rcv.timeout = timeout
+	st.rcv.encrypt = encrypt
 	if st.i == "" {
 		return nil
 	}

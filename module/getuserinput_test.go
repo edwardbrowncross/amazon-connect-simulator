@@ -175,6 +175,9 @@ func TestGetUserInput(t *testing.T) {
 			if state.rcv.timeout != tC.expRcvTimeout {
 				t.Errorf("expected receive timeout of %d but got %d", state.rcv.timeout, tC.expRcvTimeout)
 			}
+			if state.rcv.encrypt != false {
+				t.Error("expected not to get encrypted entry, but encryption was requested")
+			}
 			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
 				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)
 			}
