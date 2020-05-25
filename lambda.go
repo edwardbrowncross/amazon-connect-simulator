@@ -70,3 +70,26 @@ func validateLambda(fn interface{}) error {
 	}
 	return nil
 }
+
+func invokeLambda(fn interface{}, inJSON string) (outJSON string, outErr error, err error) {
+	fnv := reflect.ValueOf(fn)
+	inputt := reflect.TypeOf(fn).In(1)
+	in := reflect.New(inputt)
+	err = json.Unmarshal([]byte(inJSON), in.Interface())
+	if err != nil {
+		return
+	}
+	response := fnv.Call([]reflect.Value{
+		reflect.ValueOf(context.Background()),
+		in.Elem(),
+	})
+	if outErr, ok := response[1].Interface().(error); ok && outErr != nil {
+		return "", outErr, nil
+	}
+	out, err := json.Marshal(response[0].Interface())
+	if err != nil {
+		return
+	}
+	outJSON = string(out)
+	return
+}

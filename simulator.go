@@ -1,11 +1,9 @@
 package simulator
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
@@ -136,24 +134,5 @@ func (cs *simulatorConnector) InvokeLambda(named string, withJSON string) (outJS
 	if fn == nil {
 		return "", nil, fmt.Errorf("unknown lambda: %s", named)
 	}
-	fnv := reflect.ValueOf(fn)
-	inputt := reflect.TypeOf(fn).In(1)
-	in := reflect.New(inputt)
-	err = json.Unmarshal([]byte(withJSON), in.Interface())
-	if err != nil {
-		return
-	}
-	response := fnv.Call([]reflect.Value{
-		reflect.ValueOf(context.Background()),
-		in.Elem(),
-	})
-	if outErr, ok := response[1].Interface().(error); ok && outErr != nil {
-		return "", outErr, nil
-	}
-	out, err := json.Marshal(response[0].Interface())
-	if err != nil {
-		return
-	}
-	outJSON = string(out)
-	return
+	return invokeLambda(fn, withJSON)
 }
