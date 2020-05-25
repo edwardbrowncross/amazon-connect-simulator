@@ -255,6 +255,7 @@ func TestSimulator(t *testing.T) {
 	expect.MessageContaining("3 to hear the results of an AWS Lambda data dip")
 	expect.ToEnter("3")
 	expect.MessageContaining("Now performing a data dip using AWS Lambda.")
+	expect.LambdaCall("state-lookup")
 	expect.Message("Based on the number you are calling from, your area code is located in United Kingdom")
 	expect.Message("Now returning you to the main menu.")
 	expect.MessageContaining("Press 1 to be put in queue for an agent")

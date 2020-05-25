@@ -18,6 +18,7 @@ const (
 	TransferFlowType           = "TransferFlow"
 	DisconnectType             = "Disconnect"
 	UpdateContactDataType      = "UpdateContactData"
+	InvokeLambdaType           = "InvokeLambda"
 )
 
 // Event is an event describing activity in an ongoing call.
@@ -105,4 +106,16 @@ type UpdateContactDataEvent struct {
 // Type returns UpdateContactDataType.
 func (e UpdateContactDataEvent) Type() Type {
 	return UpdateContactDataType
+}
+
+// InvokeLambdaEvent is emitted when a lambda function is invoked.
+type InvokeLambdaEvent struct {
+	ARN         string
+	Payload     interface{}
+	PayloadJSON string
+}
+
+// Type returns InvokeLambdaType.
+func (e InvokeLambdaEvent) Type() Type {
+	return InvokeLambdaType
 }

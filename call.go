@@ -217,5 +217,10 @@ func (s *callConnector) InvokeLambda(named string, params json.RawMessage) (out 
 		},
 	}
 	jsonIn, _ := json.Marshal(payloadIn)
+	s.emit(event.InvokeLambdaEvent{
+		ARN:         named,
+		Payload:     payloadIn,
+		PayloadJSON: string(jsonIn),
+	})
 	return s.simulatorConnector.InvokeLambda(named, string(jsonIn))
 }

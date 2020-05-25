@@ -147,6 +147,11 @@ func (th *TestHelper) UserAttributeUpdate(key string, value string) {
 	th.run(updateContactDataMatcher{key, value})
 }
 
+// LambdaCall asserts that a lambda with the given ARN was called.
+func (th *TestHelper) LambdaCall(arn string) {
+	th.run(lambdaCalledMatcher{arn})
+}
+
 type matcher interface {
 	match(event.Event) (match bool, pass bool, got string)
 	expected() string
@@ -246,6 +251,25 @@ func (m updateContactDataMatcher) match(evt event.Event) (match bool, pass bool,
 
 func (m updateContactDataMatcher) expected() string {
 	return fmt.Sprintf("to set %s field in contact data to '%s'", m.key, m.value)
+}
+
+type lambdaCalledMatcher struct {
+	arn string
+}
+
+func (m lambdaCalledMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	e := evt.(event.InvokeLambdaEvent)
+	match = true
+	got = e.ARN
+	pass = strings.Contains(e.ARN, m.arn)
+	return
+}
+
+func (m lambdaCalledMatcher) expected() string {
+	return fmt.Sprintf("expected lambda with ARN '%s' to be called", m.arn)
 }
 
 func toggleChannel() (value <-chan bool, toggle chan<- bool) {
