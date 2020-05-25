@@ -88,16 +88,14 @@ loop:
 func (c *Call) emit(event event.Event) {
 	c.evtsMutex.Lock()
 	for _, evt := range c.evts {
-		select {
-		case evt <- event:
-		default:
-		}
+		evt <- event
 	}
 	c.evtsMutex.Unlock()
 }
 
 // Subscribe registers to receive structured events from the call.
-// It takes a channel which events will be written to (without blocking the call).
+// It takes a channel which events will be written to.
+// The call will be blocked if the events cannot be written to the channel.
 func (c *Call) Subscribe(events chan<- event.Event) {
 	c.evtsMutex.Lock()
 	c.evts = append(c.evts, events)
