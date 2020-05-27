@@ -181,6 +181,7 @@ func (tc *testContext) not() {
 	tc.negateNext = !tc.negateNext
 }
 
+// PromptContext is returned from TestHelper.Prompt()
 type PromptContext struct {
 	testContext
 }
@@ -202,7 +203,7 @@ func (tc PromptContext) ToContain(msg string) {
 	tc.run(promptPartialMatcher{msg})
 }
 
-// ToContain asserts that the prompt is exacly equal to the given string.
+// ToEqual asserts that the prompt is exacly equal to the given string.
 func (tc PromptContext) ToEqual(msg string) {
 	tc.run(promptExactMatcher{msg})
 }
@@ -213,6 +214,7 @@ func (tc PromptContext) Not() PromptContext {
 	return tc
 }
 
+// TransferContext is returned from TestHelper.Transfer()
 type TransferContext struct {
 	testContext
 }
@@ -232,6 +234,7 @@ func (th *TestHelper) UserAttributeUpdate(key string, value string) {
 	th.run(updateContactDataMatcher{key, value}, false)
 }
 
+// LambdaContext is returned from TestHelper.Lambda()
 type LambdaContext struct {
 	testContext
 }
@@ -242,7 +245,7 @@ func (tc LambdaContext) WithARN(arn string) LambdaContext {
 	return tc
 }
 
-// WithARN adds an assertion that the ARN of the invoked lambda was passed custom parameters including including those given.
+// WithParameters adds an assertion that the ARN of the invoked lambda was passed custom parameters including including those given.
 func (tc LambdaContext) WithParameters(params map[string]string) LambdaContext {
 	tc.addMatcher(lambdaParametersMatcher{params})
 	return tc
