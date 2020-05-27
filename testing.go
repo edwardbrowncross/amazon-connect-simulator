@@ -131,18 +131,18 @@ func (th *TestHelper) ToEnter(input string) {
 }
 
 // Prompt offers assertions on prompts spoken by the IVR.
-func (th *TestHelper) Prompt() promptContext {
-	return promptContext{th.newTestContext()}
+func (th *TestHelper) Prompt() PromptContext {
+	return PromptContext{th.newTestContext()}
 }
 
 // Transfer offers assertions on transfers to flows and queues.
-func (th *TestHelper) Transfer() transferContext {
-	return transferContext{th.newTestContext()}
+func (th *TestHelper) Transfer() TransferContext {
+	return TransferContext{th.newTestContext()}
 }
 
 // Lambda offers assertions on lambda invocations.
-func (th *TestHelper) Lambda() lambdaContext {
-	return lambdaContext{th.newTestContext()}
+func (th *TestHelper) Lambda() LambdaContext {
+	return LambdaContext{th.newTestContext()}
 }
 
 func (th *TestHelper) newTestContext() testContext {
@@ -181,49 +181,49 @@ func (tc *testContext) not() {
 	tc.negateNext = !tc.negateNext
 }
 
-type promptContext struct {
+type PromptContext struct {
 	testContext
 }
 
 // WithSSML adds a pending assertion that the matching prompt also is interpreted as SSML.
-func (tc promptContext) WithSSML() promptContext {
+func (tc PromptContext) WithSSML() PromptContext {
 	tc.addMatcher(promptSSMLMatcher{true})
 	return tc
 }
 
 // WithPlaintext adds a pending assertion that the matching prompt is also not interpreted as SSML.
-func (tc promptContext) WithPlaintext() promptContext {
+func (tc PromptContext) WithPlaintext() PromptContext {
 	tc.addMatcher(promptSSMLMatcher{false})
 	return tc
 }
 
 // ToContain asserts that the prompt contains the given string.
-func (tc promptContext) ToContain(msg string) {
+func (tc PromptContext) ToContain(msg string) {
 	tc.run(promptPartialMatcher{msg})
 }
 
 // ToContain asserts that the prompt is exacly equal to the given string.
-func (tc promptContext) ToEqual(msg string) {
+func (tc PromptContext) ToEqual(msg string) {
 	tc.run(promptExactMatcher{msg})
 }
 
 // Not negates the meaning of the following assertion.
-func (tc promptContext) Not() promptContext {
+func (tc PromptContext) Not() PromptContext {
 	tc.not()
 	return tc
 }
 
-type transferContext struct {
+type TransferContext struct {
 	testContext
 }
 
 // ToQueue asserts that the caller is transferred to a queue with the given name.
-func (tc transferContext) ToQueue(named string) {
+func (tc TransferContext) ToQueue(named string) {
 	tc.run(queueTransferMatcher{named})
 }
 
 // ToFlow asserts that the call moved to the flow with the given name.
-func (tc transferContext) ToFlow(named string) {
+func (tc TransferContext) ToFlow(named string) {
 	tc.run(flowTransferMatcher{named})
 }
 
@@ -232,29 +232,29 @@ func (th *TestHelper) UserAttributeUpdate(key string, value string) {
 	th.run(updateContactDataMatcher{key, value}, false)
 }
 
-type lambdaContext struct {
+type LambdaContext struct {
 	testContext
 }
 
 // WithARN adds an assertion that the ARN of the invoked lambda also contains the given string.
-func (tc lambdaContext) WithARN(arn string) lambdaContext {
+func (tc LambdaContext) WithARN(arn string) LambdaContext {
 	tc.addMatcher(lambdaARNMatcher{arn})
 	return tc
 }
 
 // WithARN adds an assertion that the ARN of the invoked lambda was passed custom parameters including including those given.
-func (tc lambdaContext) WithParameters(params map[string]string) lambdaContext {
+func (tc LambdaContext) WithParameters(params map[string]string) LambdaContext {
 	tc.addMatcher(lambdaParametersMatcher{params})
 	return tc
 }
 
 // ToBeInvoked asserts that a lambda was invoked.
-func (tc lambdaContext) ToBeInvoked() {
+func (tc LambdaContext) ToBeInvoked() {
 	tc.run(lambdaCallMatcher{})
 }
 
 // Not negates the meaning of the following assertion.
-func (tc lambdaContext) Not() lambdaContext {
+func (tc LambdaContext) Not() LambdaContext {
 	tc.not()
 	return tc
 }
