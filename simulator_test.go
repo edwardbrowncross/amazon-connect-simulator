@@ -252,10 +252,11 @@ func TestSimulator(t *testing.T) {
 	expect := NewTestHelper(t, call)
 
 	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
-	expect.Prompt().ToContain("3 to hear the results of an AWS Lambda data dip")
+	expect.Prompt().Not().WithSSML().ToContain("3 to hear the results of an AWS Lambda data dip")
 	expect.ToEnter("3")
 	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
-	expect.Lambda().WithARN("state-lookup").ToBeInvoked()
+	expect.Lambda().WithParameters(map[string]string{"butter": "salted"}).Not().ToBeInvoked()
+	expect.Lambda().WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
 	expect.Prompt().ToEqual("Based on the number you are calling from, your area code is located in United Kingdom")
 	expect.Prompt().ToEqual("Now returning you to the main menu.")
 	expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
@@ -273,6 +274,7 @@ func TestSimulator(t *testing.T) {
 			assert: func(expect *TestHelper) {
 				expect.Prompt().ToContain("2 to securely enter content")
 				expect.ToEnter("2")
+				expect.Prompt().Not().ToContain("error")
 				expect.Prompt().ToEqual("This flow enables users to enter information secured by an encryption key you provide.")
 				expect.Prompt().ToContain("Please enter your credit card number")
 				expect.ToEnter("1234098712340987#")

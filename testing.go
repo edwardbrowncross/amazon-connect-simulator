@@ -73,7 +73,7 @@ func (th *TestHelper) cancelReady() {
 	th.readyToggle <- false
 }
 
-func (th *TestHelper) run(m matcher) {
+func (th *TestHelper) run(m matcher, negate bool) {
 	ok := th.readEvents()
 	th.mutex.RLock()
 	defer th.mutex.RUnlock()
@@ -84,15 +84,22 @@ func (th *TestHelper) run(m matcher) {
 			continue
 		}
 		if pass {
+			if negate {
+				th.t.Errorf("expected not %s. Got: '%s'", m.expected(), got)
+				return
+			}
 			th.evts = th.evts[i+1:]
 			return
 		}
 		gots = append(gots, got)
 	}
+	if negate {
+		return
+	}
 	if len(gots) == 0 {
 		th.t.Errorf("expected %s. Got nothing.", m.expected())
 	} else {
-		th.t.Errorf("expected %s. Got: \n%v", m.expected(), strings.Join(gots, "\n"))
+		th.t.Errorf("expected %s. Got: \n%s", m.expected(), strings.Join(gots, "\n"))
 	}
 	if !ok {
 		if th.c.Err != nil {
@@ -139,6 +146,38 @@ func (th *TestHelper) newTestContext() testContext {
 	return testContext{TestHelper: th}.init()
 }
 
+type testContext struct {
+	*TestHelper
+	matchers   matcherChain
+	negateNext bool
+}
+
+func (tc testContext) init() testContext {
+	tc.matchers = []matcher{}
+	return tc
+}
+
+func (tc *testContext) addMatcher(m matcher) {
+	if tc.negateNext {
+		m = notMatcher{m}
+		tc.negateNext = false
+	}
+	tc.matchers = append(tc.matchers, m)
+	copy(tc.matchers[1:], tc.matchers)
+	tc.matchers[0] = m
+}
+
+func (tc *testContext) run(m matcher) {
+	negate := tc.negateNext
+	tc.negateNext = false
+	tc.addMatcher(m)
+	tc.TestHelper.run(tc.matchers, negate)
+}
+
+func (tc *testContext) not() {
+	tc.negateNext = !tc.negateNext
+}
+
 type promptContext struct {
 	testContext
 }
@@ -161,6 +200,11 @@ func (tc promptContext) ToEqual(msg string) {
 	tc.run(promptExactMatcher{msg})
 }
 
+func (tc promptContext) Not() promptContext {
+	tc.not()
+	return tc
+}
+
 type transferContext struct {
 	testContext
 }
@@ -177,7 +221,7 @@ func (tc transferContext) ToFlow(named string) {
 
 // UserAttributeUpdate asserts that a key, value pair was set in the user attributes.
 func (th *TestHelper) UserAttributeUpdate(key string, value string) {
-	th.run(updateContactDataMatcher{key, value})
+	th.run(updateContactDataMatcher{key, value}, false)
 }
 
 type lambdaContext struct {
@@ -197,6 +241,11 @@ func (tc lambdaContext) WithParameters(params map[string]string) lambdaContext {
 // ToBeInvoked asserts that a lambda was invoked.
 func (tc lambdaContext) ToBeInvoked() {
 	tc.run(lambdaCallMatcher{})
+}
+
+func (tc lambdaContext) Not() lambdaContext {
+	tc.not()
+	return tc
 }
 
 type matcher interface {
@@ -240,25 +289,17 @@ func (mc matcherChain) expected() (exp string) {
 	return fmt.Sprintf(`%s, %s`, exp, strings.Join(exps, " and "))
 }
 
-type testContext struct {
-	*TestHelper
-	matchers matcherChain
+type notMatcher struct {
+	matcher
 }
 
-func (tc testContext) init() testContext {
-	tc.matchers = []matcher{}
-	return tc
+func (nm notMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	match, pass, got = nm.matcher.match(evt)
+	pass = !pass
+	return
 }
-
-func (tc *testContext) addMatcher(m matcher) {
-	tc.matchers = append(tc.matchers, m)
-	copy(tc.matchers[1:], tc.matchers)
-	tc.matchers[0] = m
-}
-
-func (tc *testContext) run(m matcher) {
-	tc.addMatcher(m)
-	tc.TestHelper.run(tc.matchers)
+func (nm notMatcher) expected() (exp string) {
+	return fmt.Sprintf("not %s", nm.matcher.expected())
 }
 
 type promptExactMatcher struct {
