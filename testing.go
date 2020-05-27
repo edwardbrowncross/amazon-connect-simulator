@@ -130,14 +130,17 @@ func (th *TestHelper) ToEnter(input string) {
 	}
 }
 
+// Prompt offers assertions on prompts spoken by the IVR.
 func (th *TestHelper) Prompt() promptContext {
 	return promptContext{th.newTestContext()}
 }
 
+// Transfer offers assertions on transfers to flows and queues.
 func (th *TestHelper) Transfer() transferContext {
 	return transferContext{th.newTestContext()}
 }
 
+// Lambda offers assertions on lambda invocations.
 func (th *TestHelper) Lambda() lambdaContext {
 	return lambdaContext{th.newTestContext()}
 }
@@ -182,24 +185,29 @@ type promptContext struct {
 	testContext
 }
 
+// WithSSML adds a pending assertion that the matching prompt also is interpreted as SSML.
 func (tc promptContext) WithSSML() promptContext {
 	tc.addMatcher(promptSSMLMatcher{true})
 	return tc
 }
 
+// WithPlaintext adds a pending assertion that the matching prompt is also not interpreted as SSML.
 func (tc promptContext) WithPlaintext() promptContext {
 	tc.addMatcher(promptSSMLMatcher{false})
 	return tc
 }
 
+// ToContain asserts that the prompt contains the given string.
 func (tc promptContext) ToContain(msg string) {
 	tc.run(promptPartialMatcher{msg})
 }
 
+// ToContain asserts that the prompt is exacly equal to the given string.
 func (tc promptContext) ToEqual(msg string) {
 	tc.run(promptExactMatcher{msg})
 }
 
+// Not negates the meaning of the following assertion.
 func (tc promptContext) Not() promptContext {
 	tc.not()
 	return tc
@@ -228,11 +236,13 @@ type lambdaContext struct {
 	testContext
 }
 
+// WithARN adds an assertion that the ARN of the invoked lambda also contains the given string.
 func (tc lambdaContext) WithARN(arn string) lambdaContext {
 	tc.addMatcher(lambdaARNMatcher{arn})
 	return tc
 }
 
+// WithARN adds an assertion that the ARN of the invoked lambda was passed custom parameters including including those given.
 func (tc lambdaContext) WithParameters(params map[string]string) lambdaContext {
 	tc.addMatcher(lambdaParametersMatcher{params})
 	return tc
@@ -243,6 +253,7 @@ func (tc lambdaContext) ToBeInvoked() {
 	tc.run(lambdaCallMatcher{})
 }
 
+// Not negates the meaning of the following assertion.
 func (tc lambdaContext) Not() lambdaContext {
 	tc.not()
 	return tc
