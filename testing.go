@@ -1,6 +1,7 @@
 package simulator
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -91,7 +92,7 @@ func (th *TestHelper) run(m matcher) {
 	if len(gots) == 0 {
 		th.t.Errorf("expected %s. Got nothing.", m.expected())
 	} else {
-		th.t.Errorf("expected %s. Got: \n%v.", m.expected(), strings.Join(gots, "\n"))
+		th.t.Errorf("expected %s. Got: \n%v", m.expected(), strings.Join(gots, "\n"))
 	}
 	if !ok {
 		if th.c.Err != nil {
@@ -122,24 +123,56 @@ func (th *TestHelper) ToEnter(input string) {
 	}
 }
 
-// Message asserts that one of the following speech output matches the given string.
-func (th *TestHelper) Message(msg string) {
-	th.run(promptExactMatcher{msg})
+func (th *TestHelper) Prompt() promptContext {
+	return promptContext{th.newTestContext()}
 }
 
-// MessageContaining asserts that one of the following speech output contains the given string.
-func (th *TestHelper) MessageContaining(msg string) {
-	th.run(promptPartialMatcher{msg})
+func (th *TestHelper) Transfer() transferContext {
+	return transferContext{th.newTestContext()}
 }
 
-// TransferToQueue asserts that the caller is transferred to a queue with the given name.
-func (th *TestHelper) TransferToQueue(named string) {
-	th.run(queueTransferMatcher{named})
+func (th *TestHelper) Lambda() lambdaContext {
+	return lambdaContext{th.newTestContext()}
 }
 
-// TransferToFlow asserts that the call moved to the flow with the given name.
-func (th *TestHelper) TransferToFlow(named string) {
-	th.run(flowTransferMatcher{named})
+func (th *TestHelper) newTestContext() testContext {
+	return testContext{TestHelper: th}.init()
+}
+
+type promptContext struct {
+	testContext
+}
+
+func (tc promptContext) WithSSML() promptContext {
+	tc.addMatcher(promptSSMLMatcher{true})
+	return tc
+}
+
+func (tc promptContext) WithPlaintext() promptContext {
+	tc.addMatcher(promptSSMLMatcher{false})
+	return tc
+}
+
+func (tc promptContext) ToContain(msg string) {
+	tc.run(promptPartialMatcher{msg})
+}
+
+func (tc promptContext) ToEqual(msg string) {
+	tc.run(promptExactMatcher{msg})
+}
+
+type transferContext struct {
+	testContext
+}
+
+// ToQueue asserts that the caller is transferred to a queue with the given name.
+func (tc transferContext) ToQueue(named string) {
+	tc.run(queueTransferMatcher{named})
+}
+
+// ToFlow asserts that the call moved to the flow with the given name.
+func (tc transferContext) ToFlow(named string) {
+	tc.run(flowTransferMatcher{named})
 }
 
 // UserAttributeUpdate asserts that a key, value pair was set in the user attributes.
@@ -147,14 +180,85 @@ func (th *TestHelper) UserAttributeUpdate(key string, value string) {
 	th.run(updateContactDataMatcher{key, value})
 }
 
-// LambdaCall asserts that a lambda with the given ARN was called.
-func (th *TestHelper) LambdaCall(arn string) {
-	th.run(lambdaCalledMatcher{arn})
+type lambdaContext struct {
+	testContext
+}
+
+func (tc lambdaContext) WithARN(arn string) lambdaContext {
+	tc.addMatcher(lambdaARNMatcher{arn})
+	return tc
+}
+
+func (tc lambdaContext) WithParameters(params map[string]string) lambdaContext {
+	tc.addMatcher(lambdaParametersMatcher{params})
+	return tc
+}
+
+// ToBeInvoked asserts that a lambda was invoked.
+func (tc lambdaContext) ToBeInvoked() {
+	tc.run(lambdaCallMatcher{})
 }
 
 type matcher interface {
 	match(event.Event) (match bool, pass bool, got string)
 	expected() string
+}
+
+type matcherChain []matcher
+
+func (mc matcherChain) match(evt event.Event) (match bool, pass bool, got string) {
+	if len(mc) == 0 {
+		return
+	}
+	match, pass, got = mc[0].match(evt)
+	if len(mc) == 1 {
+		return
+	}
+	gots := make([]string, len(mc)-1)
+	for i, m := range mc[1:] {
+		m, p, g := m.match(evt)
+		match = match && m
+		pass = pass && p
+		gots[i] = g
+	}
+	got = fmt.Sprintf("%s (%s)", got, strings.Join(gots, ","))
+	return
+}
+
+func (mc matcherChain) expected() (exp string) {
+	if len(mc) == 0 {
+		return
+	}
+	exp = mc[0].expected()
+	if len(mc) == 1 {
+		return
+	}
+	exps := make([]string, len(mc)-1)
+	for i, m := range mc[1:] {
+		exps[i] = m.expected()
+	}
+	return fmt.Sprintf(`%s, %s`, exp, strings.Join(exps, " and "))
+}
+
+type testContext struct {
+	*TestHelper
+	matchers matcherChain
+}
+
+func (tc testContext) init() testContext {
+	tc.matchers = []matcher{}
+	return tc
+}
+
+func (tc *testContext) addMatcher(m matcher) {
+	tc.matchers = append(tc.matchers, m)
+	copy(tc.matchers[1:], tc.matchers)
+	tc.matchers[0] = m
+}
+
+func (tc *testContext) run(m matcher) {
+	tc.addMatcher(m)
+	tc.TestHelper.run(tc.matchers)
 }
 
 type promptExactMatcher struct {
@@ -193,6 +297,32 @@ func (m promptPartialMatcher) match(evt event.Event) (match bool, pass bool, got
 
 func (m promptPartialMatcher) expected() string {
 	return fmt.Sprintf("to get prompt containing '%s'", m.text)
+}
+
+type promptSSMLMatcher struct {
+	ssml bool
+}
+
+func (m promptSSMLMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.PromptType {
+		return false, false, ""
+	}
+	e := evt.(event.PromptEvent)
+	match = true
+	if e.SSML {
+		got = "SSML"
+	} else {
+		got = "plaintext"
+	}
+	pass = bool(m.ssml == e.SSML)
+	return
+}
+
+func (m promptSSMLMatcher) expected() string {
+	if m.ssml {
+		return "read as SSML"
+	}
+	return "read as plaintext"
 }
 
 type queueTransferMatcher struct {
@@ -253,11 +383,26 @@ func (m updateContactDataMatcher) expected() string {
 	return fmt.Sprintf("to set %s field in contact data to '%s'", m.key, m.value)
 }
 
-type lambdaCalledMatcher struct {
+type lambdaCallMatcher struct{}
+
+func (m lambdaCallMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	match = true
+	pass = true
+	return
+}
+
+func (m lambdaCallMatcher) expected() string {
+	return fmt.Sprintf("expected lambda to be invoked")
+}
+
+type lambdaARNMatcher struct {
 	arn string
 }
 
-func (m lambdaCalledMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+func (m lambdaARNMatcher) match(evt event.Event) (match bool, pass bool, got string) {
 	if evt.Type() != event.InvokeLambdaType {
 		return false, false, ""
 	}
@@ -268,8 +413,36 @@ func (m lambdaCalledMatcher) match(evt event.Event) (match bool, pass bool, got 
 	return
 }
 
-func (m lambdaCalledMatcher) expected() string {
-	return fmt.Sprintf("expected lambda with ARN '%s' to be called", m.arn)
+func (m lambdaARNMatcher) expected() string {
+	return fmt.Sprintf("with ARN '%s'", m.arn)
+}
+
+type lambdaParametersMatcher struct {
+	params map[string]string
+}
+
+func (m lambdaParametersMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	e := evt.(event.InvokeLambdaEvent)
+	match = true
+	got = e.ParamsJSON
+	var p map[string]string
+	if err := json.Unmarshal([]byte(e.ParamsJSON), &p); err != nil {
+		return
+	}
+	pass = true
+	for k, expV := range m.params {
+		if gotV, ok := p[k]; !ok || gotV != expV {
+			pass = false
+		}
+	}
+	return
+}
+
+func (m lambdaParametersMatcher) expected() string {
+	return fmt.Sprintf("with parameters %v", m.params)
 }
 
 func toggleChannel() (value <-chan bool, toggle chan<- bool) {

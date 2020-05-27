@@ -251,14 +251,14 @@ func TestSimulator(t *testing.T) {
 	// Test flows with testing utility.
 	expect := NewTestHelper(t, call)
 
-	expect.Message("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
-	expect.MessageContaining("3 to hear the results of an AWS Lambda data dip")
+	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
+	expect.Prompt().ToContain("3 to hear the results of an AWS Lambda data dip")
 	expect.ToEnter("3")
-	expect.MessageContaining("Now performing a data dip using AWS Lambda.")
-	expect.LambdaCall("state-lookup")
-	expect.Message("Based on the number you are calling from, your area code is located in United Kingdom")
-	expect.Message("Now returning you to the main menu.")
-	expect.MessageContaining("Press 1 to be put in queue for an agent")
+	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
+	expect.Lambda().WithARN("state-lookup").ToBeInvoked()
+	expect.Prompt().ToEqual("Based on the number you are calling from, your area code is located in United Kingdom")
+	expect.Prompt().ToEqual("Now returning you to the main menu.")
+	expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
 	call.Terminate()
 
 	// Run more tests.
@@ -271,23 +271,23 @@ func TestSimulator(t *testing.T) {
 			desc: "data entry",
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *TestHelper) {
-				expect.MessageContaining("2 to securely enter content")
+				expect.Prompt().ToContain("2 to securely enter content")
 				expect.ToEnter("2")
-				expect.Message("This flow enables users to enter information secured by an encryption key you provide.")
-				expect.MessageContaining("Please enter your credit card number")
+				expect.Prompt().ToEqual("This flow enables users to enter information secured by an encryption key you provide.")
+				expect.Prompt().ToContain("Please enter your credit card number")
 				expect.ToEnter("1234098712340987#")
 				expect.UserAttributeUpdate("EncryptedCreditCard", "(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")
-				expect.TransferToFlow("Sample inbound flow (first contact experience)")
+				expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
 			},
 		},
 		{
 			desc: "queue transfer",
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *TestHelper) {
-				expect.MessageContaining("4 to set a screen pop for the agent")
+				expect.Prompt().ToContain("4 to set a screen pop for the agent")
 				expect.ToEnter("4")
-				expect.Message("This sets a note attribute for use in a screenpop.")
-				expect.TransferToQueue("BasicQueue")
+				expect.Prompt().ToEqual("This sets a note attribute for use in a screenpop.")
+				expect.Transfer().ToQueue("BasicQueue")
 			},
 		},
 	}

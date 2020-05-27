@@ -111,7 +111,7 @@ func (e UpdateContactDataEvent) Type() Type {
 // InvokeLambdaEvent is emitted when a lambda function is invoked.
 type InvokeLambdaEvent struct {
 	ARN         string
-	Payload     interface{}
+	ParamsJSON  string
 	PayloadJSON string
 }
 
