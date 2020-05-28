@@ -19,6 +19,7 @@ type TestHelper struct {
 	ready       <-chan bool
 	readyToggle chan<- bool
 	mutex       sync.RWMutex
+	nevers      []matcher
 }
 
 // NewTestHelper creates a new TestHelper wrapping an ongoing call.
@@ -34,6 +35,7 @@ func NewTestHelper(t *testing.T, c *Call) *TestHelper {
 		ready:       readyVal,
 		readyToggle: readyToggle,
 		evts:        make([]event.Event, 0),
+		nevers:      make([]matcher, 0),
 	}
 
 	go func() {
@@ -47,6 +49,7 @@ func NewTestHelper(t *testing.T, c *Call) *TestHelper {
 				}
 				th.mutex.Lock()
 				th.evts = append(th.evts, evt)
+				th.runNevers(evt)
 				th.mutex.Unlock()
 				switch evt.Type() {
 				case event.DisconnectType, event.InputType, event.TransferQueueType:
@@ -71,6 +74,18 @@ func (th *TestHelper) readEvents() (ok bool) {
 
 func (th *TestHelper) cancelReady() {
 	th.readyToggle <- false
+}
+
+func (th *TestHelper) runNevers(evt event.Event) {
+	for _, m := range th.nevers {
+		match, pass, got := m.match(evt)
+		if !match {
+			continue
+		}
+		if pass {
+			th.t.Errorf("expected never %s. Got: '%s'", m.expected(), got)
+		}
+	}
 }
 
 func (th *TestHelper) run(m matcher, negate bool) {
@@ -153,6 +168,7 @@ type testContext struct {
 	*TestHelper
 	matchers   matcherChain
 	negateNext bool
+	matchNever bool
 }
 
 func (tc testContext) init() testContext {
@@ -171,6 +187,11 @@ func (tc *testContext) addMatcher(m matcher) {
 }
 
 func (tc *testContext) run(m matcher) {
+	if tc.matchNever {
+		tc.addMatcher(m)
+		tc.TestHelper.nevers = append(tc.TestHelper.nevers, tc.matchers)
+		return
+	}
 	negate := tc.negateNext
 	tc.negateNext = false
 	tc.addMatcher(m)
@@ -179,6 +200,10 @@ func (tc *testContext) run(m matcher) {
 
 func (tc *testContext) not() {
 	tc.negateNext = !tc.negateNext
+}
+
+func (tc *testContext) never() {
+	tc.matchNever = true
 }
 
 // PromptContext is returned from TestHelper.Prompt()
@@ -214,6 +239,12 @@ func (tc PromptContext) Not() PromptContext {
 	return tc
 }
 
+// Never asserts that the following assertions will never match for the durtion of the call.
+func (tc PromptContext) Never() PromptContext {
+	tc.never()
+	return tc
+}
+
 // TransferContext is returned from TestHelper.Transfer()
 type TransferContext struct {
 	testContext
@@ -227,6 +258,12 @@ func (tc TransferContext) ToQueue(named string) {
 // ToFlow asserts that the call moved to the flow with the given name.
 func (tc TransferContext) ToFlow(named string) {
 	tc.run(flowTransferMatcher{named})
+}
+
+// Never asserts that the following assertions will never match for the durtion of the call.
+func (tc TransferContext) Never() TransferContext {
+	tc.never()
+	return tc
 }
 
 // UserAttributeUpdate asserts that a key, value pair was set in the user attributes.
@@ -259,6 +296,12 @@ func (tc LambdaContext) ToBeInvoked() {
 // Not negates the meaning of the following assertion.
 func (tc LambdaContext) Not() LambdaContext {
 	tc.not()
+	return tc
+}
+
+// Never asserts that the following assertions will never match for the durtion of the call.
+func (tc LambdaContext) Never() LambdaContext {
+	tc.never()
 	return tc
 }
 
@@ -446,11 +489,12 @@ func (m lambdaCallMatcher) match(evt event.Event) (match bool, pass bool, got st
 	}
 	match = true
 	pass = true
+	got = "invocation"
 	return
 }
 
 func (m lambdaCallMatcher) expected() string {
-	return fmt.Sprintf("expected lambda to be invoked")
+	return fmt.Sprintf("to invoke lambda")
 }
 
 type lambdaARNMatcher struct {
@@ -469,7 +513,7 @@ func (m lambdaARNMatcher) match(evt event.Event) (match bool, pass bool, got str
 }
 
 func (m lambdaARNMatcher) expected() string {
-	return fmt.Sprintf("with ARN '%s'", m.arn)
+	return fmt.Sprintf("with ARN containing '%s'", m.arn)
 }
 
 type lambdaParametersMatcher struct {

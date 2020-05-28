@@ -251,6 +251,9 @@ func TestSimulator(t *testing.T) {
 	// Test flows with testing utility.
 	expect := NewTestHelper(t, call)
 
+	expect.Prompt().WithPlaintext().Never().ToContain("Error")
+	expect.Lambda().WithARN("self-destruct").Never().ToBeInvoked()
+
 	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
 	expect.Prompt().Not().WithSSML().ToContain("3 to hear the results of an AWS Lambda data dip")
 	expect.ToEnter("3")
