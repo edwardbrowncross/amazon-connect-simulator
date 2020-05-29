@@ -251,7 +251,9 @@ func TestSimulator(t *testing.T) {
 	// Test flows with testing utility.
 	expect := NewTestHelper(t, call)
 
-	expect.Prompt().WithPlaintext().Never().ToContain("Error")
+	expect.Prompt().Never().ToContain("Error")
+	expect.Prompt().WithPlaintext().Never().ToContain("<speak>")
+	expect.Prompt().WithSSML().Never().Not().ToContain("<speak>")
 	expect.Lambda().WithARN("self-destruct").Never().ToBeInvoked()
 
 	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
@@ -262,6 +264,7 @@ func TestSimulator(t *testing.T) {
 	expect.Lambda().WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
 	expect.Prompt().ToEqual("Based on the number you are calling from, your area code is located in United Kingdom")
 	expect.Prompt().ToEqual("Now returning you to the main menu.")
+	expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
 	expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
 	call.Terminate()
 
