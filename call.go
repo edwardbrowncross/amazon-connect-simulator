@@ -26,7 +26,7 @@ type Call struct {
 	evtsMutex   sync.Mutex
 	External    map[string]string
 	ContactData map[string]string
-	System      map[string]string
+	System      map[flow.SystemKey]string
 }
 
 // CallConfig is data unique to this particular call.
@@ -50,7 +50,7 @@ func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call
 		evts:        make([]chan<- event.Event, 0),
 		External:    map[string]string{},
 		ContactData: map[string]string{},
-		System:      map[string]string{},
+		System:      map[flow.SystemKey]string{},
 	}
 	var contactID string
 	if uuid, err := uuid.NewUUID(); err != nil {
@@ -171,44 +171,44 @@ func (s *callConnector) SetExternal(key string, value interface{}) {
 }
 
 // SetContactData sets a value into the state machine.
-func (s *callConnector) SetContactData(key string, value interface{}) {
+func (s *callConnector) SetContactData(key string, value string) {
 	s.emit(event.UpdateContactDataEvent{
 		Key:   key,
-		Value: fmt.Sprintf("%v", value),
+		Value: value,
 	})
-	s.ContactData[key] = fmt.Sprintf("%v", value)
+	s.ContactData[key] = value
 }
 
 // SetSystem sets a value into the state machine.
-func (s *callConnector) SetSystem(key string, value interface{}) {
-	s.System[key] = fmt.Sprintf("%v", value)
+func (s *callConnector) SetSystem(key flow.SystemKey, value string) {
+	s.System[key] = value
 }
 
 // GetExternal gets a value from the state machine.
-func (s *callConnector) GetExternal(key string) interface{} {
+func (s *callConnector) GetExternal(key string) *string {
 	val, found := s.External[key]
 	if !found {
 		return nil
 	}
-	return val
+	return &val
 }
 
 // GetContactData gets a value from the state machine.
-func (s *callConnector) GetContactData(key string) interface{} {
+func (s *callConnector) GetContactData(key string) *string {
 	val, found := s.ContactData[key]
 	if !found {
 		return nil
 	}
-	return val
+	return &val
 }
 
 // GetSystem gets a value from the state machine.
-func (s *callConnector) GetSystem(key string) interface{} {
+func (s *callConnector) GetSystem(key flow.SystemKey) *string {
 	val, found := s.System[key]
 	if !found {
 		return nil
 	}
-	return val
+	return &val
 }
 
 // ClearExternal allows clearing of all externalvalues in the state machine.

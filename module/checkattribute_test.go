@@ -30,7 +30,7 @@ func TestCheckAttribute(t *testing.T) {
 			{"condition":"NoMatch","transition":"00000000-0000-4000-0000-000000000002"}
 		],
 		"parameters":[
-			{"name":"Attribute","value":"Queue name"},
+			{"name":"Attribute","value":"Queue.Name"},
 			{"name":"Namespace","value":"System"}
 		]
 	}`
@@ -130,7 +130,7 @@ func TestCheckAttribute(t *testing.T) {
 			desc:   "string comparison match",
 			module: jsonString,
 			state: testCallState{
-				system: map[string]string{
+				system: map[flow.SystemKey]string{
 					flow.SystemQueueName: "complaints",
 				},
 			}.init(),
@@ -141,7 +141,7 @@ func TestCheckAttribute(t *testing.T) {
 			desc:   "string comparison no match",
 			module: jsonString,
 			state: testCallState{
-				system: map[string]string{
+				system: map[flow.SystemKey]string{
 					flow.SystemQueueName: "sales",
 				},
 			}.init(),

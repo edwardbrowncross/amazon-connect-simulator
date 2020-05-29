@@ -10,9 +10,9 @@ import (
 )
 
 type valueGetter interface {
-	GetExternal(key string) interface{}
-	GetContactData(key string) interface{}
-	GetSystem(key string) interface{}
+	GetExternal(key string) *string
+	GetContactData(key string) *string
+	GetSystem(key flow.SystemKey) *string
 }
 
 // parameterResolver uses the base methods of the CallConnector to perform more sophisticated lookup operations.
@@ -21,14 +21,14 @@ type parameterResolver struct {
 }
 
 // get gets a single value by namespace and key.
-func (call parameterResolver) get(namespace flow.ModuleParameterNamespace, key string) (interface{}, error) {
+func (call parameterResolver) get(namespace flow.ModuleParameterNamespace, key string) (*string, error) {
 	switch namespace {
 	case flow.NamespaceUserDefined:
 		return call.GetContactData(key), nil
 	case flow.NamespaceExternal:
 		return call.GetExternal(key), nil
 	case flow.NamespaceSystem:
-		return call.GetSystem(key), nil
+		return call.GetSystem(flow.SystemKey(key)), nil
 	default:
 		return nil, fmt.Errorf("unknown namespace: %s", namespace)
 	}
@@ -43,7 +43,10 @@ func (call parameterResolver) resolve(p flow.ModuleParameter) (val interface{}, 
 		if !ok {
 			return
 		}
-		val, err = call.get(*p.Namespace, key)
+		var s *string
+		if s, err = call.get(*p.Namespace, key); s != nil {
+			val = *s
+		}
 		if err != nil {
 			return
 		}
@@ -118,14 +121,16 @@ func (call parameterResolver) jsonPath(msg string) (out string) {
 		bits := jsonP.FindSubmatch([]byte(path))
 		namespace := string(bits[1])
 		key := string(bits[2])
-		var val interface{}
+		val := path
 		switch namespace {
 		case "Attributes":
-			val = call.GetContactData(key)
+			if s := call.GetContactData(key); s != nil {
+				val = *s
+			}
 		case "External":
-			val = call.GetExternal(key)
-		default:
-			val = path
+			if s := call.GetExternal(key); s != nil {
+				val = *s
+			}
 		}
 		return fmt.Sprintf("%v", val)
 	})

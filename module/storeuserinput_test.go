@@ -56,7 +56,7 @@ func TestStoreUserInput(t *testing.T) {
 		exp           string
 		expPrompt     string
 		expErr        string
-		expSys        map[string]string
+		expSys        map[flow.SystemKey]string
 		expRcvTimeout time.Duration
 		expRcvCount   int
 		expRcvEncrypt bool
@@ -102,8 +102,8 @@ func TestStoreUserInput(t *testing.T) {
 					"digits": "1 and 3",
 				},
 			}.init(),
-			expSys: map[string]string{
-				string(flow.SystemLastUserInput): "12345678",
+			expSys: map[flow.SystemKey]string{
+				flow.SystemLastUserInput: "12345678",
 			},
 			expPrompt:     "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 			expRcvCount:   8,

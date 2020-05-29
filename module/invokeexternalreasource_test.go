@@ -140,8 +140,8 @@ func TestInvokeExternalResource(t *testing.T) {
 			desc:   "success",
 			module: jsonOK,
 			state: testCallState{
-				system: map[string]string{
-					string(flow.SystemLastUserInput): "12345",
+				system: map[flow.SystemKey]string{
+					flow.SystemLastUserInput: "12345",
 				},
 				external: map[string]string{
 					"count": "4",

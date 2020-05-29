@@ -13,13 +13,13 @@ type CallConnector interface {
 	Send(s string, ssml bool)
 	Receive(count int, timeout time.Duration, encrypt bool) *string
 	Emit(event event.Event)
-	GetExternal(key string) interface{}
+	GetExternal(key string) *string
 	SetExternal(key string, value interface{})
 	ClearExternal()
-	GetContactData(key string) interface{}
-	SetContactData(key string, value interface{})
-	GetSystem(key string) interface{}
-	SetSystem(key string, value interface{})
+	GetContactData(key string) *string
+	SetContactData(key string, value string)
+	GetSystem(key flow.SystemKey) *string
+	SetSystem(key flow.SystemKey, value string)
 	InvokeLambda(named string, inParams json.RawMessage) (outJSON string, outErr error, err error)
 	GetFlowStart(flowName string) *flow.ModuleID
 }

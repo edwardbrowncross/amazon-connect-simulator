@@ -28,7 +28,10 @@ func (m checkAttribute) Run(call CallConnector) (next *flow.ModuleID, err error)
 	if err != nil {
 		return
 	}
-	vs := fmt.Sprintf("%s", v)
+	vs := ""
+	if v != nil {
+		vs = *v
+	}
 	return evaluateConditions(m.Branches, vs)
 }
 

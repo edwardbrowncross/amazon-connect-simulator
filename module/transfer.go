@@ -27,12 +27,12 @@ func (m transfer) Run(call CallConnector) (next *flow.ModuleID, err error) {
 		call.Emit(event.FlowTransferEvent{FlowARN: cfid.Value.(string), FlowName: cfid.ResourceName})
 		return next, nil
 	case flow.TargetQueue:
-		queue := call.GetSystem(string(flow.SystemQueueName))
-		if qs, ok := queue.(string); !ok || qs == "" {
+		queue := call.GetSystem(flow.SystemQueueName)
+		arn := call.GetSystem(flow.SystemQueueARN)
+		if queue == nil || arn == nil {
 			return m.Branches.GetLink(flow.BranchError), nil
 		}
-		arn := call.GetSystem(string(flow.SystemQueueARN))
-		call.Emit(event.QueueTransferEvent{QueueARN: arn.(string), QueueName: queue.(string)})
+		call.Emit(event.QueueTransferEvent{QueueARN: *arn, QueueName: *queue})
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unhandled transfer target: %s", m.Target)

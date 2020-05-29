@@ -29,7 +29,7 @@ type testCallState struct {
 	lambdaErr    error
 	external     map[string]string
 	contactData  map[string]string
-	system       map[string]string
+	system       map[flow.SystemKey]string
 	flowStart    map[string]flow.ModuleID
 	events       []event.Event
 }
@@ -42,7 +42,7 @@ func (st testCallState) init() *testCallState {
 		st.contactData = map[string]string{}
 	}
 	if st.system == nil {
-		st.system = map[string]string{}
+		st.system = map[flow.SystemKey]string{}
 	}
 	if st.flowStart == nil {
 		st.flowStart = map[string]flow.ModuleID{}
@@ -64,12 +64,12 @@ func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool)
 	}
 	return &st.i
 }
-func (st *testCallState) GetExternal(key string) interface{} {
+func (st *testCallState) GetExternal(key string) *string {
 	val, found := st.external[key]
 	if !found {
 		return nil
 	}
-	return val
+	return &val
 }
 func (st *testCallState) SetExternal(key string, value interface{}) {
 	st.external[key] = fmt.Sprintf("%v", value)
@@ -77,25 +77,25 @@ func (st *testCallState) SetExternal(key string, value interface{}) {
 func (st *testCallState) ClearExternal() {
 	st.external = map[string]string{}
 }
-func (st *testCallState) GetContactData(key string) interface{} {
+func (st *testCallState) GetContactData(key string) *string {
 	val, found := st.contactData[key]
 	if !found {
 		return nil
 	}
-	return val
+	return &val
 }
-func (st *testCallState) SetContactData(key string, value interface{}) {
-	st.contactData[key] = fmt.Sprintf("%v", value)
+func (st *testCallState) SetContactData(key string, value string) {
+	st.contactData[key] = value
 }
-func (st *testCallState) GetSystem(key string) interface{} {
+func (st *testCallState) GetSystem(key flow.SystemKey) *string {
 	val, found := st.system[key]
 	if !found {
 		return nil
 	}
-	return val
+	return &val
 }
-func (st *testCallState) SetSystem(key string, value interface{}) {
-	st.system[key] = fmt.Sprintf("%v", value)
+func (st *testCallState) SetSystem(key flow.SystemKey, value string) {
+	st.system[key] = value
 }
 func (st *testCallState) InvokeLambda(named string, inParams json.RawMessage) (outJSON string, outErr error, err error) {
 	st.lambdaIn.name = named

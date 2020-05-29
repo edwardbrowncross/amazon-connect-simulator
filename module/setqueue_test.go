@@ -32,7 +32,7 @@ func TestSetQueue(t *testing.T) {
 		desc   string
 		module string
 		exp    string
-		expSys map[string]string
+		expSys map[flow.SystemKey]string
 		expEvt []event.Event
 		expErr string
 	}{
@@ -50,9 +50,9 @@ func TestSetQueue(t *testing.T) {
 			desc:   "success",
 			module: jsonOK,
 			exp:    "00000000-0000-4000-0000-000000000001",
-			expSys: map[string]string{
-				string(flow.SystemQueueARN):  "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001",
-				string(flow.SystemQueueName): "Complaints",
+			expSys: map[flow.SystemKey]string{
+				flow.SystemQueueARN:  "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001",
+				flow.SystemQueueName: "Complaints",
 			},
 			expEvt: []event.Event{},
 		},

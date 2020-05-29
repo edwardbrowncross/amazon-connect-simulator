@@ -39,7 +39,7 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 		next = m.Branches.GetLink(flow.BranchError)
 		return
 	}
-	call.SetSystem(string(flow.SystemLastUserInput), *entry)
+	call.SetSystem(flow.SystemLastUserInput, *entry)
 	next = m.Branches.GetLink(flow.BranchSuccess)
 	return
 }

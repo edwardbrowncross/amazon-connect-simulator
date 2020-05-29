@@ -54,7 +54,7 @@ func TestTransfer(t *testing.T) {
 		module string
 		state  *testCallState
 		exp    string
-		expSys map[string]string
+		expSys map[flow.SystemKey]string
 		expEvt []event.Event
 		expErr string
 	}{
@@ -86,7 +86,7 @@ func TestTransfer(t *testing.T) {
 			desc:   "no queue set",
 			module: jsonQueueOK,
 			state: testCallState{
-				system: map[string]string{},
+				system: map[flow.SystemKey]string{},
 			}.init(),
 			exp:    "00000000-0000-4000-0000-000000000002",
 			expEvt: []event.Event{},
@@ -108,7 +108,7 @@ func TestTransfer(t *testing.T) {
 			desc:   "success - queue",
 			module: jsonQueueOK,
 			state: testCallState{
-				system: map[string]string{
+				system: map[flow.SystemKey]string{
 					flow.SystemQueueName: "complaints",
 					flow.SystemQueueARN:  "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001",
 				},

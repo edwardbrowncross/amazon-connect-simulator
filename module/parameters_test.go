@@ -108,7 +108,7 @@ func TestUnmarshalOK(t *testing.T) {
 		external: map[string]string{
 			"testValue2": "foo",
 		},
-		system: map[string]string{
+		system: map[flow.SystemKey]string{
 			"testValue3": "bar",
 		},
 		contactData: map[string]string{
