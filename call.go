@@ -9,6 +9,7 @@ import (
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 	"github.com/edwardbrowncross/amazon-connect-simulator/module"
+	"github.com/google/uuid"
 )
 
 // Call is used to interact with an ongoing call.
@@ -51,6 +52,17 @@ func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call
 		ContactData: map[string]string{},
 		System:      map[string]string{},
 	}
+	var contactID string
+	if uuid, err := uuid.NewUUID(); err != nil {
+		contactID = uuid.String()
+	}
+	c.System[flow.SystemCustomerNumber] = conf.DestNumber
+	c.System[flow.SystemDialedNumber] = conf.SourceNumber
+	c.System[flow.SystemChannel] = "VOICE"
+	c.System[flow.SystemInitiationMethod] = "INBOUND"
+	c.System[flow.SystemContactID] = contactID
+	c.System[flow.SystemPreviousContactID] = contactID
+	c.System[flow.SystemInitialContactID] = contactID
 	go c.run(start, callConnector{&c, sc}, kill)
 	return &c
 }
@@ -209,10 +221,29 @@ func (s *callConnector) Emit(event event.Event) {
 }
 
 func (s *callConnector) InvokeLambda(named string, params json.RawMessage) (out string, outErr error, err error) {
+	attr, _ := json.Marshal(s.ContactData)
 	payloadIn := LambdaPayload{
 		Details: lambdaPayloadDetails{
+			ContactData: lambdaPayloadContactData{
+				Attributes: attr,
+				Channel:    s.System[flow.SystemChannel],
+				CustomerEndpoint: lambdaPayloadContactEndpoint{
+					Type:    "TELEPHONE_NUMBER",
+					Address: s.System[flow.SystemCustomerNumber],
+				},
+				SystemEndpoint: lambdaPayloadContactEndpoint{
+					Type:    "TELEPHONE_NUMBER",
+					Address: s.System[flow.SystemDialedNumber],
+				},
+				InitiationMethod:  s.System[flow.SystemInitiationMethod],
+				ContactID:         s.System[flow.SystemContactID],
+				PreviousContactID: s.System[flow.SystemPreviousContactID],
+				InitialContactID:  s.System[flow.SystemInitialContactID],
+				Queue:             s.GetSystem(flow.SystemQueueARN),
+			},
 			Parameters: params,
 		},
+		Name: "ContactFlowEvent",
 	}
 	jsonIn, _ := json.Marshal(payloadIn)
 	s.emit(event.InvokeLambdaEvent{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
@@ -200,8 +201,16 @@ func TestSimulator(t *testing.T) {
 
 	// Register a lambda.
 	err = sim.RegisterLambda("state-lookup", func(ctx context.Context, in LambdaPayload) (out stateLookupOutput, err error) {
+		tel := in.Details.ContactData.CustomerEndpoint.Address
+		var state string
+		switch {
+		case strings.HasPrefix(tel, "+44"):
+			state = "United Kingdom"
+		default:
+			state = "unknown"
+		}
 		return stateLookupOutput{
-			State: "United Kingdom",
+			State: state,
 		}, nil
 	})
 	if err != nil {
@@ -260,7 +269,7 @@ func TestSimulator(t *testing.T) {
 	expect.Prompt().Not().WithSSML().ToContain("3 to hear the results of an AWS Lambda data dip")
 	expect.ToEnter("3")
 	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
-	expect.Lambda().WithParameters(map[string]string{"butter": "salted"}).Not().ToBeInvoked()
+	expect.Lambda().WithParameter("butter", "salted").Not().ToBeInvoked()
 	expect.Lambda().WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
 	expect.Prompt().ToEqual("Based on the number you are calling from, your area code is located in United Kingdom")
 	expect.Prompt().ToEqual("Now returning you to the main menu.")

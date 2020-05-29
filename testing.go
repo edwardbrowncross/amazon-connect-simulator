@@ -282,9 +282,15 @@ func (tc LambdaContext) WithARN(arn string) LambdaContext {
 	return tc
 }
 
-// WithParameters adds an assertion that the ARN of the invoked lambda was passed custom parameters including including those given.
+// WithParameters adds an assertion that the ARN of the invoked lambda was passed custom parameters including those given.
 func (tc LambdaContext) WithParameters(params map[string]string) LambdaContext {
 	tc.addMatcher(lambdaParametersMatcher{params})
+	return tc
+}
+
+// WithParameter adds an assertion that the ARN of the invoked lambda was passed custom parameters including the one given.
+func (tc LambdaContext) WithParameter(key string, value string) LambdaContext {
+	tc.addMatcher(lambdaParametersMatcher{map[string]string{key: value}})
 	return tc
 }
 
