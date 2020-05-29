@@ -223,6 +223,12 @@ func (tc PromptContext) WithPlaintext() PromptContext {
 	return tc
 }
 
+// WithVoice adds a pending assertion that the matching prompt will be spoken with the given voice (e.g. "Joanna").
+func (tc PromptContext) WithVoice(voice string) PromptContext {
+	tc.addMatcher(promptVoiceMatcher{voice})
+	return tc
+}
+
 // ToContain asserts that the prompt contains the given string.
 func (tc PromptContext) ToContain(msg string) {
 	tc.run(promptPartialMatcher{msg})
@@ -231,6 +237,11 @@ func (tc PromptContext) ToContain(msg string) {
 // ToEqual asserts that the prompt is exacly equal to the given string.
 func (tc PromptContext) ToEqual(msg string) {
 	tc.run(promptExactMatcher{msg})
+}
+
+// ToPlay asserts that any prompt is heard.
+func (tc PromptContext) ToPlay() {
+	tc.run(promptPartialMatcher{""})
 }
 
 // Not negates the meaning of the following assertion.
@@ -400,6 +411,9 @@ func (m promptPartialMatcher) match(evt event.Event) (match bool, pass bool, got
 }
 
 func (m promptPartialMatcher) expected() string {
+	if m.text == "" {
+		return "to get a prompt"
+	}
 	return fmt.Sprintf("to get prompt containing '%s'", m.text)
 }
 
@@ -414,9 +428,9 @@ func (m promptSSMLMatcher) match(evt event.Event) (match bool, pass bool, got st
 	e := evt.(event.PromptEvent)
 	match = true
 	if e.SSML {
-		got = "SSML"
+		got = "as SSML"
 	} else {
-		got = "plaintext"
+		got = "as plaintext"
 	}
 	pass = bool(m.ssml == e.SSML)
 	return
@@ -427,6 +441,25 @@ func (m promptSSMLMatcher) expected() string {
 		return "read as SSML"
 	}
 	return "read as plaintext"
+}
+
+type promptVoiceMatcher struct {
+	voice string
+}
+
+func (m promptVoiceMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.PromptType {
+		return false, false, ""
+	}
+	e := evt.(event.PromptEvent)
+	match = true
+	got = fmt.Sprintf("in %s voice", e.Voice)
+	pass = bool(m.voice == e.Voice)
+	return
+}
+
+func (m promptVoiceMatcher) expected() string {
+	return fmt.Sprintf("read in the %s voice", m.voice)
 }
 
 type queueTransferMatcher struct {

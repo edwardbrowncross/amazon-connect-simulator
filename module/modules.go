@@ -52,6 +52,8 @@ func MakeRunner(m flow.Module) Runner {
 		return invokeExternalResource(m)
 	case flow.ModuleCheckHoursOfOperation:
 		return checkHoursOfOperation(m)
+	case flow.ModuleSetVoice:
+		return setVoice(m)
 	default:
 		return passthrough(m)
 	}

@@ -63,6 +63,7 @@ func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call
 	c.System[flow.SystemContactID] = contactID
 	c.System[flow.SystemPreviousContactID] = contactID
 	c.System[flow.SystemInitialContactID] = contactID
+	c.System[flow.SystemTextToSpeechVoice] = "Joanna"
 	go c.run(start, callConnector{&c, sc}, kill)
 	return &c
 }
@@ -128,8 +129,9 @@ type callConnector struct {
 
 func (s *callConnector) Send(msg string, ssml bool) {
 	s.emit(event.PromptEvent{
-		Text: msg,
-		SSML: ssml,
+		Text:  msg,
+		SSML:  ssml,
+		Voice: *s.GetSystem(flow.SystemTextToSpeechVoice),
 	})
 	s.o <- msg
 }

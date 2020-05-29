@@ -35,6 +35,7 @@ const (
 	ModuleSetAttributes                     = "SetAttributes"
 	ModuleInvokeExternalResource            = "InvokeExternalResource"
 	ModuleCheckHoursOfOperation             = "CheckHoursOfOperation"
+	ModuleSetVoice                          = "SetVoice"
 )
 
 // Known types of block no longer in use in new flows.
@@ -84,9 +85,20 @@ const (
 
 // Values that can be dynamically looked up from the Connect system.
 const (
-	SystemLastUserInput SystemKey = "Stored customer input"
-	SystemQueueName               = "Queue name"
-	SystemQueueARN                = "Queue ARN"
+	SystemLastUserInput       SystemKey = "Stored customer input"
+	SystemCustomerNumber                = "Customer Number"
+	SystemDialedNumber                  = "Dialed Number"
+	SystemCustomerCallback              = "Customer callback number"
+	SystemQueueName                     = "Queue.Name"
+	SystemQueueARN                      = "Queue.ARN"
+	SystemQueueOutboundNumber           = "Queue.OutboundCallerId.Address"
+	SystemTextToSpeechVoice             = "TextToSpeechVoiceId"
+	SystemContactID                     = "ContactId"
+	SystemInitialContactID              = "InitialContactId"
+	SystemPreviousContactID             = "PreviousContactId"
+	SystemChannel                       = "Channel"
+	SystemInstanceARN                   = "InstanceARN"
+	SystemInitiationMethod              = "InitiationMethod"
 )
 
 // Flow is the base of the XML structure of an exported flow.

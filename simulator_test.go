@@ -263,6 +263,7 @@ func TestSimulator(t *testing.T) {
 	expect.Prompt().Never().ToContain("Error")
 	expect.Prompt().WithPlaintext().Never().ToContain("<speak>")
 	expect.Prompt().WithSSML().Never().Not().ToContain("<speak>")
+	expect.Prompt().Never().Not().WithVoice("Joanna").ToPlay()
 	expect.Lambda().WithARN("self-destruct").Never().ToBeInvoked()
 
 	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")

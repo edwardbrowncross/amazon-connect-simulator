@@ -47,8 +47,9 @@ func (e ModuleEvent) Type() Type {
 
 // PromptEvent is emitted when a module outputs spoken text to the caller.
 type PromptEvent struct {
-	Text string
-	SSML bool
+	Text  string
+	SSML  bool
+	Voice string
 }
 
 // Type returns PromptType.

@@ -170,6 +170,11 @@ func TestMakeRunner(t *testing.T) {
 			exp:    checkHoursOfOperation{},
 		},
 		{
+			desc:   "SetVoice",
+			module: `{ "type": "SetVoice" }`,
+			exp:    setVoice{},
+		},
+		{
 			desc:   "Passthrough",
 			module: `{ "type": "WhatIsThisIDontEven" }`,
 			exp:    passthrough{},
