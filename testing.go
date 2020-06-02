@@ -88,7 +88,7 @@ func (th *TestHelper) runNevers(evt event.Event) {
 	}
 }
 
-func (th *TestHelper) run(m matcher, negate bool) {
+func (th *TestHelper) run(m matcher, negate bool, unordered bool) {
 	ok := th.readEvents()
 	th.mutex.RLock()
 	defer th.mutex.RUnlock()
@@ -103,7 +103,9 @@ func (th *TestHelper) run(m matcher, negate bool) {
 				th.t.Errorf("expected not %s. Got: '%s'", m.expected(), got)
 				return
 			}
-			th.evts = th.evts[i+1:]
+			if !unordered {
+				th.evts = th.evts[i+1:]
+			}
 			return
 		}
 		gots = append(gots, got)
@@ -160,15 +162,21 @@ func (th *TestHelper) Lambda() LambdaContext {
 	return LambdaContext{th.newTestContext()}
 }
 
+// Attributes offers assertion on user attributes.
+func (th *TestHelper) Attributes() AttributesContext {
+	return AttributesContext{th.newTestContext()}
+}
+
 func (th *TestHelper) newTestContext() testContext {
 	return testContext{TestHelper: th}.init()
 }
 
 type testContext struct {
 	*TestHelper
-	matchers   matcherChain
-	negateNext bool
-	matchNever bool
+	matchers       matcherChain
+	negateNext     bool
+	matchNever     bool
+	matchUnordered bool
 }
 
 func (tc testContext) init() testContext {
@@ -195,7 +203,7 @@ func (tc *testContext) run(m matcher) {
 	negate := tc.negateNext
 	tc.negateNext = false
 	tc.addMatcher(m)
-	tc.TestHelper.run(tc.matchers, negate)
+	tc.TestHelper.run(tc.matchers, negate, tc.matchUnordered)
 }
 
 func (tc *testContext) not() {
@@ -204,6 +212,10 @@ func (tc *testContext) not() {
 
 func (tc *testContext) never() {
 	tc.matchNever = true
+}
+
+func (tc *testContext) unordered() {
+	tc.matchUnordered = true
 }
 
 // PromptContext is returned from TestHelper.Prompt()
@@ -256,6 +268,12 @@ func (tc PromptContext) Never() PromptContext {
 	return tc
 }
 
+// Unordered suspends the implicit assertion that events occur in the flow in the order you assert them in your tests.
+func (tc PromptContext) Unordered() PromptContext {
+	tc.unordered()
+	return tc
+}
+
 // TransferContext is returned from TestHelper.Transfer()
 type TransferContext struct {
 	testContext
@@ -277,9 +295,10 @@ func (tc TransferContext) Never() TransferContext {
 	return tc
 }
 
-// UserAttributeUpdate asserts that a key, value pair was set in the user attributes.
-func (th *TestHelper) UserAttributeUpdate(key string, value string) {
-	th.run(updateContactDataMatcher{key, value}, false)
+// Unordered suspends the implicit assertion that events occur in the flow in the order you assert them in your tests.
+func (tc TransferContext) Unordered() TransferContext {
+	tc.unordered()
+	return tc
 }
 
 // LambdaContext is returned from TestHelper.Lambda()
@@ -319,6 +338,45 @@ func (tc LambdaContext) Not() LambdaContext {
 // Never asserts that the following assertions will never match for the durtion of the call.
 func (tc LambdaContext) Never() LambdaContext {
 	tc.never()
+	return tc
+}
+
+// Unordered suspends the implicit assertion that events occur in the flow in the order you assert them in your tests.
+func (tc LambdaContext) Unordered() LambdaContext {
+	tc.unordered()
+	return tc
+}
+
+// AttributesContext is returned from TestHelper.Attributes()
+type AttributesContext struct {
+	testContext
+}
+
+// ToUpdate asserts that the contact attributes with the given key was set to the given value.
+func (tc AttributesContext) ToUpdate(key string, value string) {
+	tc.run(attributeKeyValueMatcher{key, value})
+}
+
+// ToUpdateKey asserts that the contact attributes with the given key was set to something.
+func (tc AttributesContext) ToUpdateKey(key string) {
+	tc.run(attributeKeyValueMatcher{key, "*"})
+}
+
+// Not negates the meaning of the following assertion.
+func (tc AttributesContext) Not() AttributesContext {
+	tc.not()
+	return tc
+}
+
+// Never asserts that the following assertions will never match for the durtion of the call.
+func (tc AttributesContext) Never() AttributesContext {
+	tc.never()
+	return tc
+}
+
+// Unordered suspends the implicit assertion that events occur in the flow in the order you assert them in your tests.
+func (tc AttributesContext) Unordered() AttributesContext {
+	tc.unordered()
 	return tc
 }
 
@@ -500,26 +558,6 @@ func (m flowTransferMatcher) expected() string {
 	return fmt.Sprintf("to be transfered to flow '%s'", m.flowName)
 }
 
-type updateContactDataMatcher struct {
-	key   string
-	value string
-}
-
-func (m updateContactDataMatcher) match(evt event.Event) (match bool, pass bool, got string) {
-	if evt.Type() != event.UpdateContactDataType {
-		return false, false, ""
-	}
-	e := evt.(event.UpdateContactDataEvent)
-	match = true
-	got = fmt.Sprintf("%s='%s'", e.Key, e.Value)
-	pass = bool(e.Key == m.key && e.Value == m.value)
-	return
-}
-
-func (m updateContactDataMatcher) expected() string {
-	return fmt.Sprintf("to set %s field in contact data to '%s'", m.key, m.value)
-}
-
 type lambdaCallMatcher struct{}
 
 func (m lambdaCallMatcher) match(evt event.Event) (match bool, pass bool, got string) {
@@ -581,6 +619,34 @@ func (m lambdaParametersMatcher) match(evt event.Event) (match bool, pass bool, 
 
 func (m lambdaParametersMatcher) expected() string {
 	return fmt.Sprintf("with parameters %v", m.params)
+}
+
+type attributeKeyValueMatcher struct {
+	key   string
+	value string
+}
+
+func (m attributeKeyValueMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.UpdateContactDataType {
+		return false, false, ""
+	}
+	e := evt.(event.UpdateContactDataEvent)
+	match = true
+	got = fmt.Sprintf("%s='%s'", e.Key, e.Value)
+	pass = bool((e.Key == m.key || m.key == "*") && (e.Value == m.value || m.value == "*"))
+	return
+}
+
+func (m attributeKeyValueMatcher) expected() string {
+	key := m.key
+	value := fmt.Sprintf(" to '%s'", m.value)
+	if key == "*" {
+		key = "any"
+	}
+	if value == "*" {
+		value = ""
+	}
+	return fmt.Sprintf("to set %s field in contact data%s", key, value)
 }
 
 func toggleChannel() (value <-chan bool, toggle chan<- bool) {

@@ -294,7 +294,7 @@ func TestSimulator(t *testing.T) {
 				expect.Prompt().ToEqual("This flow enables users to enter information secured by an encryption key you provide.")
 				expect.Prompt().ToContain("Please enter your credit card number")
 				expect.ToEnter("1234098712340987#")
-				expect.UserAttributeUpdate("EncryptedCreditCard", "(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")
+				expect.Attributes().ToUpdate("EncryptedCreditCard", "(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")
 				expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
 			},
 		},
@@ -304,6 +304,7 @@ func TestSimulator(t *testing.T) {
 			assert: func(expect *TestHelper) {
 				expect.Prompt().ToContain("4 to set a screen pop for the agent")
 				expect.ToEnter("4")
+				expect.Attributes().Unordered().ToUpdateKey("note")
 				expect.Prompt().ToEqual("This sets a note attribute for use in a screenpop.")
 				expect.Transfer().ToQueue("BasicQueue")
 			},
