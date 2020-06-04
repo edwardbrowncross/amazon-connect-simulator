@@ -248,10 +248,14 @@ func (s *callConnector) InvokeLambda(named string, params json.RawMessage) (out 
 		Name: "ContactFlowEvent",
 	}
 	jsonIn, _ := json.Marshal(payloadIn)
+	out, outErr, err = s.simulatorConnector.InvokeLambda(named, string(jsonIn))
 	s.emit(event.InvokeLambdaEvent{
-		ARN:         named,
-		ParamsJSON:  string(params),
-		PayloadJSON: string(jsonIn),
+		ARN:           named,
+		ParamsJSON:    string(params),
+		PayloadJSON:   string(jsonIn),
+		ResponseJSON:  out,
+		ResponseError: outErr,
+		Error:         err,
 	})
-	return s.simulatorConnector.InvokeLambda(named, string(jsonIn))
+	return
 }

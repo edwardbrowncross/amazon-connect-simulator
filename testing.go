@@ -329,6 +329,11 @@ func (tc LambdaContext) ToBeInvoked() {
 	tc.run(lambdaCallMatcher{})
 }
 
+// ToReturnError asserts that a lambda was invoked.
+func (tc LambdaContext) ToReturnError(err error) {
+	tc.run(lambdaErrorMatcher{err})
+}
+
 // Not negates the meaning of the following assertion.
 func (tc LambdaContext) Not() LambdaContext {
 	tc.not()
@@ -571,7 +576,30 @@ func (m lambdaCallMatcher) match(evt event.Event) (match bool, pass bool, got st
 }
 
 func (m lambdaCallMatcher) expected() string {
-	return fmt.Sprintf("to invoke lambda")
+	return "to invoke lambda"
+}
+
+type lambdaErrorMatcher struct {
+	err error
+}
+
+func (m lambdaErrorMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	e := evt.(event.InvokeLambdaEvent)
+	match = true
+	pass = true
+	if e.Error == nil {
+		got = "nil"
+	} else {
+		got = e.Error.Error()
+	}
+	return
+}
+
+func (m lambdaErrorMatcher) expected() string {
+	return fmt.Sprintf("to return error: %v", m.err)
 }
 
 type lambdaARNMatcher struct {

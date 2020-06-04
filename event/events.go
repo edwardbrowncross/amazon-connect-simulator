@@ -109,11 +109,14 @@ func (e UpdateContactDataEvent) Type() Type {
 	return UpdateContactDataType
 }
 
-// InvokeLambdaEvent is emitted when a lambda function is invoked.
+// InvokeLambdaEvent is emitted before a lambda function is invoked.
 type InvokeLambdaEvent struct {
-	ARN         string
-	ParamsJSON  string
-	PayloadJSON string
+	ARN           string
+	ParamsJSON    string
+	PayloadJSON   string
+	ResponseJSON  string
+	ResponseError error
+	Error         error
 }
 
 // Type returns InvokeLambdaType.
