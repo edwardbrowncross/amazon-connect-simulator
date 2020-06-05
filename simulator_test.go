@@ -260,6 +260,10 @@ func TestSimulator(t *testing.T) {
 	// Test flows with testing utility.
 	expect := NewTestHelper(t, call)
 
+	// Track test coverage.
+	coverage := NewTestCoverageReporter(&sim)
+	coverage.Track(call)
+
 	expect.Prompt().Never().ToContain("Error")
 	expect.Prompt().WithPlaintext().Never().ToContain("<speak>")
 	expect.Prompt().WithSSML().Never().Not().ToContain("<speak>")
@@ -313,6 +317,7 @@ func TestSimulator(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			call, err := sim.StartCall(tC.conf)
+			coverage.Track(call)
 			if err != nil {
 				t.Fatalf("unexpected error starting call: %v", err)
 			}
@@ -321,4 +326,5 @@ func TestSimulator(t *testing.T) {
 			call.Terminate()
 		})
 	}
+	t.Logf("\nFlow coverage: %.0f%%", coverage.GetCoverage()*100)
 }

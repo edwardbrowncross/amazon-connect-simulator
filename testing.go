@@ -55,7 +55,7 @@ func NewTestHelper(t *testing.T, c *Call) *TestHelper {
 				case event.DisconnectType, event.InputType, event.TransferQueueType:
 					readyToggle <- true
 				case event.ModuleType:
-					fmt.Println(evt.(event.ModuleEvent).ModuleType)
+					// fmt.Println(evt.(event.ModuleEvent).ModuleType)
 					fallthrough
 				default:
 					readyToggle <- false

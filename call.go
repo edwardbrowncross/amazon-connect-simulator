@@ -86,6 +86,9 @@ loop:
 			}
 			c.emit(event.NewModuleEvent(*m))
 			next, err = module.MakeRunner(*m).Run(&cs)
+			if next != nil {
+				c.emit(event.NewBranchEvent(*m, *next))
+			}
 		}
 	}
 	c.emit(event.DisconnectEvent{})

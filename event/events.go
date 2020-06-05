@@ -13,7 +13,8 @@ type Type string
 const (
 	ModuleType            Type = "Module"
 	PromptType                 = "Prompt"
-	InputType                  = "Type"
+	InputType                  = "Input"
+	BranchType                 = "Branch"
 	TransferQueueType          = "TransferQueue"
 	TransferFlowType           = "TransferFlow"
 	DisconnectType             = "Disconnect"
@@ -66,6 +67,34 @@ type InputEvent struct {
 // Type returns InputType.
 func (e InputEvent) Type() Type {
 	return InputType
+}
+
+// NewBranchEvent creates a new branch event when moving from module m to module with id next.
+func NewBranchEvent(m flow.Module, next flow.ModuleID) BranchEvent {
+	var label flow.ModuleBranchCondition
+	for _, b := range m.Branches {
+		if b.Transition == next {
+			label = b.Condition
+			break
+		}
+	}
+	return BranchEvent{
+		From:  m.ID,
+		To:    next,
+		Label: label,
+	}
+}
+
+// BranchEvent is emitted when a module completes selects the next module to run.
+type BranchEvent struct {
+	From  flow.ModuleID
+	To    flow.ModuleID
+	Label flow.ModuleBranchCondition
+}
+
+// Type returns BranchType.
+func (e BranchEvent) Type() Type {
+	return BranchType
 }
 
 // QueueTransferEvent is emitted when a caller is transfered to a queue.
