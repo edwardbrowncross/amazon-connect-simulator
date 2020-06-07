@@ -51,6 +51,17 @@ func (cs *Simulator) LoadFlowJSON(bytes []byte) error {
 	return nil
 }
 
+// Flows returns the flows currently loaded into the simulator.
+func (cs *Simulator) Flows() []flow.Flow {
+	r := make([]flow.Flow, len(cs.flows))
+	i := 0
+	for _, f := range cs.flows {
+		r[i] = f
+		i++
+	}
+	return r
+}
+
 // RegisterLambda specifies how external lambda invocations will be handled.
 // name is a string that forms part of the lambda's ARN (such as its name).
 // fn is function like handle(context.Context, struct) (struct, error). It will be passed an Amazon Connect lambda event.

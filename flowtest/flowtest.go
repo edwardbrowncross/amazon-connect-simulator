@@ -1,4 +1,4 @@
-package simulator
+package flowtest
 
 import (
 	"encoding/json"
@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
+	simulator "github.com/edwardbrowncross/amazon-connect-simulator"
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 )
 
-// TestHelper provides utility methods for asserting behavior of an ongoing call.
-type TestHelper struct {
+// Expect provides utility methods for asserting behavior of an ongoing call.
+type Expect struct {
 	t           *testing.T
-	c           *Call
+	c           *simulator.Call
 	evts        []event.Event
 	ready       <-chan bool
 	readyToggle chan<- bool
@@ -22,14 +23,14 @@ type TestHelper struct {
 	nevers      []matcher
 }
 
-// NewTestHelper creates a new TestHelper wrapping an ongoing call.
-// TestHelper provides utility methods for asserting behavior of an ongoing call.
-func NewTestHelper(t *testing.T, c *Call) *TestHelper {
+// New creates a new Expect wrapping an ongoing call.
+// Expect provides utility methods for asserting behavior of an ongoing call.
+func New(t *testing.T, c *simulator.Call) *Expect {
 	buffer := make(chan event.Event, 64)
 	c.Subscribe(buffer)
 	readyVal, readyToggle := toggleChannel()
 
-	th := TestHelper{
+	th := Expect{
 		t:           t,
 		c:           c,
 		ready:       readyVal,
@@ -67,16 +68,16 @@ func NewTestHelper(t *testing.T, c *Call) *TestHelper {
 	return &th
 }
 
-func (th *TestHelper) readEvents() (ok bool) {
+func (th *Expect) readEvents() (ok bool) {
 	_, ok = <-th.ready
 	return
 }
 
-func (th *TestHelper) cancelReady() {
+func (th *Expect) cancelReady() {
 	th.readyToggle <- false
 }
 
-func (th *TestHelper) runNevers(evt event.Event) {
+func (th *Expect) runNevers(evt event.Event) {
 	for _, m := range th.nevers {
 		match, pass, got := m.match(evt)
 		if !match {
@@ -88,7 +89,7 @@ func (th *TestHelper) runNevers(evt event.Event) {
 	}
 }
 
-func (th *TestHelper) run(m matcher, negate bool, unordered bool) {
+func (th *Expect) run(m matcher, negate bool, unordered bool) {
 	ok := th.readEvents()
 	th.mutex.RLock()
 	defer th.mutex.RUnlock()
@@ -129,7 +130,7 @@ func (th *TestHelper) run(m matcher, negate bool, unordered bool) {
 
 // ToEnter sends the given string as either a numeric entry or as an option selection.
 // If not all characters can be sent, or more characters are required, it errors the test.
-func (th *TestHelper) ToEnter(input string) {
+func (th *Expect) ToEnter(input string) {
 	th.cancelReady()
 	for i, r := range input {
 		select {
@@ -148,31 +149,31 @@ func (th *TestHelper) ToEnter(input string) {
 }
 
 // Prompt offers assertions on prompts spoken by the IVR.
-func (th *TestHelper) Prompt() PromptContext {
+func (th *Expect) Prompt() PromptContext {
 	return PromptContext{th.newTestContext()}
 }
 
 // Transfer offers assertions on transfers to flows and queues.
-func (th *TestHelper) Transfer() TransferContext {
+func (th *Expect) Transfer() TransferContext {
 	return TransferContext{th.newTestContext()}
 }
 
 // Lambda offers assertions on lambda invocations.
-func (th *TestHelper) Lambda() LambdaContext {
+func (th *Expect) Lambda() LambdaContext {
 	return LambdaContext{th.newTestContext()}
 }
 
 // Attributes offers assertion on user attributes.
-func (th *TestHelper) Attributes() AttributesContext {
+func (th *Expect) Attributes() AttributesContext {
 	return AttributesContext{th.newTestContext()}
 }
 
-func (th *TestHelper) newTestContext() testContext {
-	return testContext{TestHelper: th}.init()
+func (th *Expect) newTestContext() testContext {
+	return testContext{Expect: th}.init()
 }
 
 type testContext struct {
-	*TestHelper
+	*Expect
 	matchers       matcherChain
 	negateNext     bool
 	matchNever     bool
@@ -197,13 +198,13 @@ func (tc *testContext) addMatcher(m matcher) {
 func (tc *testContext) run(m matcher) {
 	if tc.matchNever {
 		tc.addMatcher(m)
-		tc.TestHelper.nevers = append(tc.TestHelper.nevers, tc.matchers)
+		tc.Expect.nevers = append(tc.Expect.nevers, tc.matchers)
 		return
 	}
 	negate := tc.negateNext
 	tc.negateNext = false
 	tc.addMatcher(m)
-	tc.TestHelper.run(tc.matchers, negate, tc.matchUnordered)
+	tc.Expect.run(tc.matchers, negate, tc.matchUnordered)
 }
 
 func (tc *testContext) not() {
@@ -218,7 +219,7 @@ func (tc *testContext) unordered() {
 	tc.matchUnordered = true
 }
 
-// PromptContext is returned from TestHelper.Prompt()
+// PromptContext is returned from Expect.Prompt()
 type PromptContext struct {
 	testContext
 }
@@ -274,7 +275,7 @@ func (tc PromptContext) Unordered() PromptContext {
 	return tc
 }
 
-// TransferContext is returned from TestHelper.Transfer()
+// TransferContext is returned from Expect.Transfer()
 type TransferContext struct {
 	testContext
 }
@@ -301,7 +302,7 @@ func (tc TransferContext) Unordered() TransferContext {
 	return tc
 }
 
-// LambdaContext is returned from TestHelper.Lambda()
+// LambdaContext is returned from Expect.Lambda()
 type LambdaContext struct {
 	testContext
 }
@@ -352,7 +353,7 @@ func (tc LambdaContext) Unordered() LambdaContext {
 	return tc
 }
 
-// AttributesContext is returned from TestHelper.Attributes()
+// AttributesContext is returned from Expect.Attributes()
 type AttributesContext struct {
 	testContext
 }

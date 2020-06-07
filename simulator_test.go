@@ -1,4 +1,4 @@
-package simulator
+package simulator_test
 
 import (
 	"context"
@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	. "github.com/edwardbrowncross/amazon-connect-simulator"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
+	"github.com/edwardbrowncross/amazon-connect-simulator/flowtest"
 )
 
 var sampleWelcome = `{
@@ -258,10 +260,10 @@ func TestSimulator(t *testing.T) {
 	}
 
 	// Test flows with testing utility.
-	expect := NewTestHelper(t, call)
+	expect := flowtest.New(t, call)
 
 	// Track test coverage.
-	coverage := NewTestCoverageReporter(&sim)
+	coverage := flowtest.NewCoverageReporter(&sim)
 	coverage.Track(call)
 
 	expect.Prompt().Never().ToContain("Error")
@@ -286,12 +288,12 @@ func TestSimulator(t *testing.T) {
 	testCases := []struct {
 		desc   string
 		conf   CallConfig
-		assert func(expect *TestHelper)
+		assert func(expect *flowtest.Expect)
 	}{
 		{
 			desc: "data entry",
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
-			assert: func(expect *TestHelper) {
+			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("2 to securely enter content")
 				expect.ToEnter("2")
 				expect.Prompt().Not().ToContain("error")
@@ -305,7 +307,7 @@ func TestSimulator(t *testing.T) {
 		{
 			desc: "queue transfer",
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
-			assert: func(expect *TestHelper) {
+			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("4 to set a screen pop for the agent")
 				expect.ToEnter("4")
 				expect.Attributes().Unordered().ToUpdateKey("note")
@@ -317,14 +319,14 @@ func TestSimulator(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			call, err := sim.StartCall(tC.conf)
-			coverage.Track(call)
 			if err != nil {
 				t.Fatalf("unexpected error starting call: %v", err)
 			}
-			expect := NewTestHelper(t, call)
+			coverage.Track(call)
+			expect := flowtest.New(t, call)
 			tC.assert(expect)
 			call.Terminate()
 		})
 	}
-	t.Logf("\nFlow coverage: %.0f%%", coverage.GetCoverage()*100)
+	t.Logf("\nFlow coverage: %.0f%%", coverage.Coverage()*100)
 }
