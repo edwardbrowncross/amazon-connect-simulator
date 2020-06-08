@@ -56,8 +56,8 @@ func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call
 	if uuid, err := uuid.NewUUID(); err != nil {
 		contactID = uuid.String()
 	}
-	c.System[flow.SystemCustomerNumber] = conf.DestNumber
-	c.System[flow.SystemDialedNumber] = conf.SourceNumber
+	c.System[flow.SystemCustomerNumber] = conf.SourceNumber
+	c.System[flow.SystemDialedNumber] = conf.DestNumber
 	c.System[flow.SystemChannel] = "VOICE"
 	c.System[flow.SystemInitiationMethod] = "INBOUND"
 	c.System[flow.SystemContactID] = contactID
