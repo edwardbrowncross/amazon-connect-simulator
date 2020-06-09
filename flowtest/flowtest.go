@@ -153,6 +153,7 @@ func (th *Expect) ToEnter(input string) {
 // ToWaitForTimeout waits for the current input block to time out.
 func (th *Expect) ToWaitForTimeout() {
 	th.t.Helper()
+	th.cancelReady()
 	select {
 	case <-time.After(time.Second):
 		th.t.Error("expected to wait for timeout, but no input was required")
