@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/edwardbrowncross/amazon-connect-simulator"
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
@@ -282,6 +283,39 @@ func TestSimulator(t *testing.T) {
 	expect.Prompt().ToEqual("Now returning you to the main menu.")
 	expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
 	expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
+
+	// Test debugger.
+	debugger := flowtest.NewDebugger(call)
+	debugger.SetBreakpoint("7eefafd6-402f-4759-967c-b017ef5f3969")
+	call.I <- '3'
+	debugger.Wait()
+	if p, ok := debugger.Position(); !ok {
+		t.Errorf("Expected debugger to be paused but it was not")
+	} else if p != "7eefafd6-402f-4759-967c-b017ef5f3969" {
+		t.Errorf("expected debugger to pause at 7eefafd6-402f-4759-967c-b017ef5f3969 but it paused at %s", p)
+	}
+	debugger.Step()
+	debugger.Wait()
+	if p, ok := debugger.Position(); !ok {
+		t.Errorf("Expected debugger to be paused but it was not")
+	} else if p != "68f1b094-8c1c-4231-879d-b106e53de281" {
+		t.Errorf("expected debugger to pause at 68f1b094-8c1c-4231-879d-b106e53de281 but it paused at %s", p)
+	}
+	debugger.RemoveBreakpoint("7eefafd6-402f-4759-967c-b017ef5f3969")
+	debugger.Resume()
+	time.Sleep(10 * time.Millisecond)
+	if p := debugger.Paused(); p {
+		t.Errorf("Expected debugger not to be paused but it was")
+	}
+	debugger.SetBreakpointAfter("68f1b094-8c1c-4231-879d-b106e53de281")
+	call.I <- '3'
+	debugger.Wait()
+	if p, ok := debugger.Position(); !ok {
+		t.Errorf("Expected debugger to be paused but it was not")
+	} else if p != "35c77601-311e-4e0b-85a5-883381ac2655" {
+		t.Errorf("expected debugger to pause at 35c77601-311e-4e0b-85a5-883381ac2655 but it paused at %s", p)
+	}
+	debugger.Detatch()
 	call.Terminate()
 
 	// Run more tests.
