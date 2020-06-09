@@ -153,6 +153,11 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bo
 	case in, ok := <-s.i:
 		if !ok {
 			s.Terminate()
+			return nil
+		}
+		if in == 'T' {
+			// Force timeout.
+			return nil
 		}
 		got = append(got, in)
 	}

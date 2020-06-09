@@ -147,6 +147,17 @@ func (th *Expect) ToEnter(input string) {
 	}
 }
 
+// ToWaitForTimeout waits for the current input block to time out.
+func (th *Expect) ToWaitForTimeout() {
+	th.cancelReady()
+	select {
+	case <-time.After(time.Second):
+		th.t.Error("expected to wait for timeout, but no input was required")
+		return
+	case th.c.I <- 'T':
+	}
+}
+
 // Prompt offers assertions on prompts spoken by the IVR.
 func (th *Expect) Prompt() PromptContext {
 	return PromptContext{th.newTestContext()}
