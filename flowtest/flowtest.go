@@ -140,12 +140,14 @@ func (th *Expect) ToEnter(input string) {
 			continue
 		case <-time.After(time.Second):
 			th.t.Errorf("expected to be able to send input %s, but was only able to send %d characters", input, i)
+			return
 		}
 	}
 	select {
-	case th.c.I <- '#':
+	case <-time.After(time.Second):
 		th.t.Errorf("expected input of %s to fill the input, but it did not.", input)
-	default:
+		th.readyToggle <- true
+	case <-th.ready:
 		break
 	}
 }
