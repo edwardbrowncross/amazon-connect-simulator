@@ -131,7 +131,28 @@ func (call parameterResolver) jsonPath(msg string) (out string) {
 			if s := call.GetExternal(key); s != nil {
 				val = *s
 			}
+		case "CustomerEndpoint":
+			if key == "Address" {
+				if s := call.GetSystem(flow.SystemCustomerNumber); s != nil {
+					val = *s
+				}
+			} else if key == "Type" {
+				val = "TELEPHONE_NUMBER"
+			}
+		case "SystemEndpoint":
+			if key == "Address" {
+				if s := call.GetSystem(flow.SystemDialedNumber); s != nil {
+					val = *s
+				}
+			} else if key == "Type" {
+				val = "TELEPHONE_NUMBER"
+			}
+		default:
+			if s := call.GetSystem(flow.SystemKey(key)); s != nil {
+				val = *s
+			}
 		}
+
 		return fmt.Sprintf("%v", val)
 	})
 	return
