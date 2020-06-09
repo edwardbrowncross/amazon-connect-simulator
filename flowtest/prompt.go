@@ -32,16 +32,19 @@ func (tc PromptContext) WithVoice(voice string) PromptContext {
 
 // ToContain asserts that the prompt contains the given string.
 func (tc PromptContext) ToContain(msg string) {
+	tc.t.Helper()
 	tc.run(promptPartialMatcher{msg})
 }
 
 // ToEqual asserts that the prompt is exacly equal to the given string.
 func (tc PromptContext) ToEqual(msg string) {
+	tc.t.Helper()
 	tc.run(promptExactMatcher{msg})
 }
 
 // ToPlay asserts that any prompt is heard.
 func (tc PromptContext) ToPlay() {
+	tc.t.Helper()
 	tc.run(promptPartialMatcher{""})
 }
 

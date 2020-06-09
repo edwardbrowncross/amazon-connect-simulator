@@ -13,11 +13,13 @@ type TransferContext struct {
 
 // ToQueue asserts that the caller is transferred to a queue with the given name.
 func (tc TransferContext) ToQueue(named string) {
+	tc.t.Helper()
 	tc.run(queueTransferMatcher{named})
 }
 
 // ToFlow asserts that the call moved to the flow with the given name.
 func (tc TransferContext) ToFlow(named string) {
+	tc.t.Helper()
 	tc.run(flowTransferMatcher{named})
 }
 

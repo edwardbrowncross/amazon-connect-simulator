@@ -33,11 +33,13 @@ func (tc LambdaContext) WithParameter(key string, value string) LambdaContext {
 
 // ToBeInvoked asserts that a lambda was invoked.
 func (tc LambdaContext) ToBeInvoked() {
+	tc.t.Helper()
 	tc.run(lambdaCallMatcher{})
 }
 
 // ToReturnError asserts that a lambda was invoked.
 func (tc LambdaContext) ToReturnError(err error) {
+	tc.t.Helper()
 	tc.run(lambdaErrorMatcher{err})
 }
 

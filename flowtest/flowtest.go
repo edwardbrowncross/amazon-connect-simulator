@@ -77,6 +77,7 @@ func (th *Expect) cancelReady() {
 }
 
 func (th *Expect) runNevers(evt event.Event) {
+	th.t.Helper()
 	for _, m := range th.nevers {
 		match, pass, got := m.match(evt)
 		if !match {
@@ -89,6 +90,7 @@ func (th *Expect) runNevers(evt event.Event) {
 }
 
 func (th *Expect) run(m matcher, negate bool, unordered bool) {
+	th.t.Helper()
 	ok := th.readEvents()
 	th.mutex.RLock()
 	defer th.mutex.RUnlock()
@@ -130,6 +132,7 @@ func (th *Expect) run(m matcher, negate bool, unordered bool) {
 // ToEnter sends the given string as either a numeric entry or as an option selection.
 // If not all characters can be sent, or more characters are required, it errors the test.
 func (th *Expect) ToEnter(input string) {
+	th.t.Helper()
 	th.cancelReady()
 	for i, r := range input {
 		select {
@@ -149,7 +152,7 @@ func (th *Expect) ToEnter(input string) {
 
 // ToWaitForTimeout waits for the current input block to time out.
 func (th *Expect) ToWaitForTimeout() {
-	th.cancelReady()
+	th.t.Helper()
 	select {
 	case <-time.After(time.Second):
 		th.t.Error("expected to wait for timeout, but no input was required")
@@ -206,6 +209,7 @@ func (tc *testContext) addMatcher(m matcher) {
 }
 
 func (tc *testContext) run(m matcher) {
+	tc.t.Helper()
 	if tc.matchNever {
 		tc.addMatcher(m)
 		tc.Expect.nevers = append(tc.Expect.nevers, tc.matchers)
