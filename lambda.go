@@ -61,9 +61,9 @@ func validateLambda(fn interface{}) error {
 	if fnt.NumOut() != 2 {
 		return fmt.Errorf("expected function to return 2 elements but it returns %d", fnt.NumOut())
 	}
-	if fnt.Out(0).Kind() != reflect.Struct {
-		return fmt.Errorf("expected first return to be struct but it was: %s", fnt.Out(0).Kind())
-	}
+	// if fnt.Out(0).Kind() != reflect.Struct {
+	// 	return fmt.Errorf("expected first return to be struct but it was: %s", fnt.Out(0).Kind())
+	// }
 	errort := reflect.TypeOf((*error)(nil)).Elem()
 	if !fnt.Out(1).Implements(errort) {
 		return errors.New("expected second return to be an error")
