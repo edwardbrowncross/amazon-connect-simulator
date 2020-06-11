@@ -1,11 +1,13 @@
 package flowtest
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 
 	simulator "github.com/edwardbrowncross/amazon-connect-simulator"
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
+	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
 
 // CoverageReporter tracks which branches of a call flow have been explored during testing.
@@ -55,8 +57,57 @@ func (cr *CoverageReporter) Coverage() float64 {
 	return float64(len(cr.seen)) / float64(cr.numBranches())
 }
 
+// CoverageReportFlow is one element of the return value of CoverageReport().
+type CoverageReportFlow struct {
+	Name    string
+	Modules []CoverageReportModule
+}
+
+// CoverageReportModule is one element of CoverageReportFlow.
+type CoverageReportModule struct {
+	ID       flow.ModuleID
+	Type     flow.ModuleType
+	Branches []CoverageReportBranch
+}
+
+// CoverageReportBranch is one element of CoverageReportModule.
+type CoverageReportBranch struct {
+	Type    flow.ModuleBranchCondition
+	Dest    flow.ModuleID
+	Covered bool
+}
+
+// CoverageReport generates a structured list of all the branches and whether they have been covered.
+func (cr *CoverageReporter) CoverageReport() []CoverageReportFlow {
+	cr.m.Lock()
+	flows := cr.s.Flows()
+	cFlows := make([]CoverageReportFlow, len(flows))
+	for i, f := range cr.s.Flows() {
+		cFlows[i] = CoverageReportFlow{
+			Name:    f.Metadata.Name,
+			Modules: make([]CoverageReportModule, len(f.Modules)),
+		}
+		for j, m := range f.Modules {
+			cFlows[i].Modules[j] = CoverageReportModule{
+				ID:       m.ID,
+				Type:     m.Type,
+				Branches: make([]CoverageReportBranch, len(m.Branches)),
+			}
+			for k, b := range m.Branches {
+				cFlows[i].Modules[j].Branches[k] = CoverageReportBranch{
+					Type:    b.Condition,
+					Dest:    b.Transition,
+					Covered: cr.seen[formatKey(m.ID, b.Transition)],
+				}
+			}
+		}
+	}
+	cr.m.Unlock()
+	return cFlows
+}
+
 func (cr *CoverageReporter) add(evt event.BranchEvent) {
-	key := fmt.Sprintf("%s->%s", evt.From, evt.To)
+	key := formatKey(evt.From, evt.To)
 	cr.m.Lock()
 	defer cr.m.Unlock()
 	cr.seen[key] = true
@@ -70,4 +121,32 @@ func (cr *CoverageReporter) numBranches() int {
 		}
 	}
 	return n
+}
+
+func formatKey(src flow.ModuleID, dst flow.ModuleID) string {
+	return fmt.Sprintf("%s->%s", src, dst)
+}
+
+// FormatCoverageReport takes the output of CoverageReport() and formats it into a printable form.
+// If colors is true, ansi color highlighting is added to indicate covered or missed branches.
+func FormatCoverageReport(report []CoverageReportFlow, colors bool) string {
+	buf := bytes.NewBufferString("")
+	for _, f := range report {
+		buf.WriteString(fmt.Sprintf("%s:\n", f.Name))
+		for _, m := range f.Modules {
+			buf.WriteString(fmt.Sprintf("\t%s (%s):\n", m.Type, m.ID))
+			for _, b := range m.Branches {
+				c := fmt.Sprintf("%v", b.Covered)
+				if colors {
+					if b.Covered {
+						c = "\u001b[32m"
+					} else {
+						c = "\u001b[31m"
+					}
+				}
+				buf.WriteString(fmt.Sprintf("\t\t%s %s (%s)\u001b[0m\n", c, b.Type, b.Dest))
+			}
+		}
+	}
+	return buf.String()
 }
