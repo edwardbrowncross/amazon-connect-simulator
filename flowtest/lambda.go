@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
 )
@@ -11,6 +12,12 @@ import (
 // LambdaContext is returned from Expect.Lambda()
 type LambdaContext struct {
 	testContext
+}
+
+// WithTimeout adds an assertion that the timeout of the invoked lamda is equal to the given value.
+func (tc LambdaContext) WithTimeout(time time.Duration) LambdaContext {
+	tc.addMatcher(lambdaTimeoutMatcher{time})
+	return tc
 }
 
 // WithARN adds an assertion that the ARN of the invoked lambda also contains the given string.
@@ -145,4 +152,23 @@ func (m lambdaParametersMatcher) match(evt event.Event) (match bool, pass bool, 
 
 func (m lambdaParametersMatcher) expected() string {
 	return fmt.Sprintf("with parameters %v", m.params)
+}
+
+type lambdaTimeoutMatcher struct {
+	timeout time.Duration
+}
+
+func (m lambdaTimeoutMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	e := evt.(event.InvokeLambdaEvent)
+	match = true
+	got = fmt.Sprintf("%d seconds", e.Timeout/time.Second)
+	pass = e.Timeout == m.timeout
+	return
+}
+
+func (m lambdaTimeoutMatcher) expected() string {
+	return fmt.Sprintf("with timeout of %d seconds", m.timeout/time.Second)
 }

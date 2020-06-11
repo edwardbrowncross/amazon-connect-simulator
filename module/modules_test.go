@@ -97,7 +97,7 @@ func (st *testCallState) GetSystem(key flow.SystemKey) *string {
 func (st *testCallState) SetSystem(key flow.SystemKey, value string) {
 	st.system[key] = value
 }
-func (st *testCallState) InvokeLambda(named string, inParams json.RawMessage) (outJSON string, outErr error, err error) {
+func (st *testCallState) InvokeLambda(named string, inParams json.RawMessage, timeout time.Duration) (outJSON string, outErr error, err error) {
 	st.lambdaIn.name = named
 	st.lambdaIn.input = inParams
 	return st.lambdaOut, st.lambdaOutErr, st.lambdaErr

@@ -39,11 +39,11 @@ func TestValidateLambda(t *testing.T) {
 			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput) { return },
 			exp:  "expected function to return 2 elements but it returns 1",
 		},
-		{
-			desc: "first return not a struct",
-			fn:   func(context.Context, LambdaPayload) (s string, e error) { return },
-			exp:  "expected first return to be struct but it was: string",
-		},
+		// {
+		// 	desc: "first return not a struct",
+		// 	fn:   func(context.Context, LambdaPayload) (s string, e error) { return },
+		// 	exp:  "expected first return to be struct but it was: string",
+		// },
 		{
 			desc: "second return not an error",
 			fn:   func(context.Context, LambdaPayload) (o testLambdaOutput, e string) { return },

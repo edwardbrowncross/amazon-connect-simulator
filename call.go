@@ -230,7 +230,7 @@ func (s *callConnector) Emit(event event.Event) {
 	s.emit(event)
 }
 
-func (s *callConnector) InvokeLambda(named string, params json.RawMessage) (out string, outErr error, err error) {
+func (s *callConnector) InvokeLambda(named string, params json.RawMessage, timeout time.Duration) (out string, outErr error, err error) {
 	attr, _ := json.Marshal(s.ContactData)
 	payloadIn := LambdaPayload{
 		Details: lambdaPayloadDetails{
@@ -259,6 +259,7 @@ func (s *callConnector) InvokeLambda(named string, params json.RawMessage) (out 
 	out, outErr, err = s.simulatorConnector.InvokeLambda(named, string(jsonIn))
 	s.emit(event.InvokeLambdaEvent{
 		ARN:           named,
+		Timeout:       timeout,
 		ParamsJSON:    string(params),
 		PayloadJSON:   string(jsonIn),
 		ResponseJSON:  out,

@@ -278,7 +278,7 @@ func TestSimulator(t *testing.T) {
 	expect.ToEnter("3")
 	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
 	expect.Lambda().WithParameter("butter", "salted").Not().ToBeInvoked()
-	expect.Lambda().WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
+	expect.Lambda().WithTimeout(4 * time.Second).WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
 	expect.Prompt().ToEqual("Based on the number you are calling from, your area code is located in United Kingdom")
 	expect.Prompt().ToEqual("Now returning you to the main menu.")
 	expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")

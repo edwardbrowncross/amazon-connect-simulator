@@ -20,7 +20,7 @@ type CallConnector interface {
 	SetContactData(key string, value string)
 	GetSystem(key flow.SystemKey) *string
 	SetSystem(key flow.SystemKey, value string)
-	InvokeLambda(named string, inParams json.RawMessage) (outJSON string, outErr error, err error)
+	InvokeLambda(named string, inParams json.RawMessage, timeout time.Duration) (outJSON string, outErr error, err error)
 	GetFlowStart(flowName string) *flow.ModuleID
 }
 

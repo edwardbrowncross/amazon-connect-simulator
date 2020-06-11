@@ -3,7 +3,9 @@ package module
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
@@ -28,13 +30,17 @@ func (m invokeExternalResource) Run(call CallConnector) (next *flow.ModuleID, er
 	if err != nil {
 		return
 	}
+	tl, err := strconv.Atoi(p.TimeLimit)
+	if err != nil {
+		return nil, fmt.Errorf("invalid TimeLimit: %s", p.TimeLimit)
+	}
 	fields := make([]string, len(p.Parameter))
 	for i, p := range p.Parameter {
 		v, _ := json.Marshal(p.V)
 		fields[i] = fmt.Sprintf(`"%s":%s`, p.K, v)
 	}
 	paramsIn := fmt.Sprintf(`{%s}`, strings.Join(fields, ","))
-	jsonOut, errOut, err := call.InvokeLambda(p.FunctionArn, json.RawMessage(paramsIn))
+	jsonOut, errOut, err := call.InvokeLambda(p.FunctionArn, json.RawMessage(paramsIn), time.Duration(tl)*time.Second)
 	if err != nil {
 		return m.Branches.GetLink(flow.BranchError), nil
 	}

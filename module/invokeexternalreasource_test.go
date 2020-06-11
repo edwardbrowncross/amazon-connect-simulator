@@ -27,6 +27,19 @@ func TestInvokeExternalResource(t *testing.T) {
 		],
 		"target": "Lambda"
 	}`
+	jsonBadTimeout := `{
+		"id": "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e",
+		"type": "InvokeExternalResource",
+		"branches": [
+			{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"},
+			{"condition":"Error","transition":"00000000-0000-4000-0000-000000000002"}
+		],
+		"parameters":[
+			{"name":"FunctionArn","value":"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn","namespace":null},
+			{"name":"TimeLimit","value":"three"}
+		],
+		"target": "Lambda"
+	}`
 	jsonBadTarget := `{
 		"id": "38cd099e-e9f0-4af2-ac6a-186fa89c6d1e",
 		"type": "InvokeExternalResource",
@@ -100,6 +113,11 @@ func TestInvokeExternalResource(t *testing.T) {
 			desc:   "bad target",
 			module: jsonBadTarget,
 			expErr: "unknown target: EC2",
+		},
+		{
+			desc:   "bad timeout",
+			module: jsonBadTimeout,
+			expErr: "invalid TimeLimit: three",
 		},
 		{
 			desc:   "missing lambda",

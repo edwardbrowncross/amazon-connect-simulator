@@ -141,6 +141,7 @@ func (e UpdateContactDataEvent) Type() Type {
 // InvokeLambdaEvent is emitted before a lambda function is invoked.
 type InvokeLambdaEvent struct {
 	ARN           string
+	Timeout       time.Duration
 	ParamsJSON    string
 	PayloadJSON   string
 	ResponseJSON  string
