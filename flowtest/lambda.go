@@ -94,7 +94,7 @@ func (m lambdaErrorMatcher) match(evt event.Event) (match bool, pass bool, got s
 	}
 	e := evt.(event.InvokeLambdaEvent)
 	match = true
-	pass = true
+	pass = e.Error != nil
 	if e.Error == nil {
 		got = "nil"
 	} else {

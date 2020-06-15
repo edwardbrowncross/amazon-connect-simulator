@@ -2,6 +2,7 @@ package simulator_test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -247,8 +248,8 @@ func TestSimulator(t *testing.T) {
 	}
 
 	// Set a custom encryption function.
-	sim.SetEncryption(func(in string) string {
-		return fmt.Sprintf("(I am encrypting)>༼ つ ◕_◕ ༽つ%s", in)
+	sim.SetEncryption(func(in string) []byte {
+		return []byte(fmt.Sprintf("(I am encrypting)>༼ つ ◕_◕ ༽つ%s", in))
 	})
 
 	// Start a call.
@@ -334,7 +335,7 @@ func TestSimulator(t *testing.T) {
 				expect.Prompt().ToEqual("This flow enables users to enter information secured by an encryption key you provide.")
 				expect.Prompt().ToContain("Please enter your credit card number")
 				expect.ToEnter("1234098712340987#")
-				expect.Attributes().ToUpdate("EncryptedCreditCard", "(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")
+				expect.Attributes().ToUpdate("EncryptedCreditCard", base64.StdEncoding.EncodeToString([]byte("(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")))
 				expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
 			},
 		},

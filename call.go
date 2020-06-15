@@ -1,6 +1,7 @@
 package simulator
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -170,7 +171,9 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bo
 
 	r := string(got)
 	if encrypt {
-		r = s.Encrypt(r)
+		enc := s.Encrypt(r)
+		r = base64.StdEncoding.EncodeToString(enc)
+
 	}
 	return &r
 }
