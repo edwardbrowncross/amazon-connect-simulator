@@ -41,8 +41,8 @@ func (m getUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
 		return nil, fmt.Errorf("invalid Timeout: %s", p.Timeout)
 	}
 	in := call.Receive(md, time.Duration(tm)*time.Second, false, '❌')
-	if in == nil {
+	if in == "Timeout" {
 		return m.Branches.GetLink(flow.BranchTimeout), nil
 	}
-	return evaluateConditions(m.Branches, *in)
+	return evaluateConditions(m.Branches, in)
 }

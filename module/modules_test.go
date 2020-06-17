@@ -56,15 +56,15 @@ func (st *testCallState) Send(s string, ssml bool) {
 	st.o = s
 	st.oSSML = ssml
 }
-func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool, terminator rune) *string {
+func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool, terminator rune) string {
 	st.rcv.count = count
 	st.rcv.timeout = timeout
 	st.rcv.encrypt = encrypt
 	st.rcv.terminator = terminator
 	if st.i == "" {
-		return nil
+		return ""
 	}
-	return &st.i
+	return st.i
 }
 func (st *testCallState) GetExternal(key string) *string {
 	val, found := st.external[key]

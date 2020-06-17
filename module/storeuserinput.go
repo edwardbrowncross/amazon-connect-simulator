@@ -41,11 +41,11 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 		terminator, _ = utf8.DecodeRuneInString(*p.TerminatorDigits)
 	}
 	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, p.EncryptEntry, terminator)
-	if entry == nil {
+	if entry == "" {
 		next = m.Branches.GetLink(flow.BranchError)
 		return
 	}
-	call.SetSystem(flow.SystemLastUserInput, *entry)
+	call.SetSystem(flow.SystemLastUserInput, entry)
 	next = m.Branches.GetLink(flow.BranchSuccess)
 	return
 }

@@ -110,6 +110,7 @@ func TestGetUserInput(t *testing.T) {
 		{
 			desc:   "timeout",
 			module: jsonOK,
+			entry:  "Timeout",
 			exp:    "00000000-0000-4000-0000-000000000003",
 			state: testCallState{
 				external: map[string]string{

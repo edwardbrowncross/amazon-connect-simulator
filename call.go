@@ -142,7 +142,7 @@ func (s *callConnector) Send(msg string, ssml bool) {
 
 // Receive waits for a number of characters to be input.
 // If the first character is not received before the timeout time, it returns nil.
-func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bool, terminator rune) *string {
+func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bool, terminator rune) string {
 	s.emit(event.InputEvent{
 		MaxDigits: maxDigits,
 		Timeout:   timeout,
@@ -150,15 +150,14 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bo
 	got := []rune{}
 	select {
 	case <-time.After(timeout):
-		return nil
+		return "Timeout"
 	case in, ok := <-s.i:
 		if !ok {
 			s.Terminate()
-			return nil
+			return ""
 		}
 		if in == 'T' {
-			// Force timeout.
-			return nil
+			return "Timeout"
 		}
 		got = append(got, in)
 	}
@@ -175,7 +174,7 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bo
 		r = base64.StdEncoding.EncodeToString(enc)
 
 	}
-	return &r
+	return r
 }
 
 // SetExternal sets a value into the state machine.
