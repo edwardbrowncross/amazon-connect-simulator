@@ -91,6 +91,24 @@ func (call parameterResolver) unmarshal(plist flow.ModuleParameterList, into int
 				vals.Index(j).Set(reflect.ValueOf(val).Convert(sliceType))
 				intov.Field(i).Set(vals)
 			}
+		case reflect.Ptr:
+			p := plist.Get(f.Name)
+			if p == nil {
+				continue
+			}
+			val, err := call.resolve(*p)
+			if err != nil {
+				return err
+			}
+			if val == nil {
+				continue
+			}
+			valv := reflect.ValueOf(val)
+			if !valv.Type().ConvertibleTo(f.Type.Elem()) {
+				return fmt.Errorf("type mismatch in field %s. Cannot convert %s to %s", f.Name, valv.Type(), f.Type.Elem())
+			}
+			intov.Field(i).Set(reflect.New(f.Type.Elem()))
+			intov.Field(i).Elem().Set(valv.Convert(f.Type.Elem()))
 		default:
 			p := plist.Get(f.Name)
 			if p == nil {

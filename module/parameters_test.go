@@ -63,6 +63,22 @@ func TestUnmarshalErrors(t *testing.T) {
 			into:   &struct{ Value []string }{},
 			expErr: "type mismatch in field Value. Cannot convert float64 to string",
 		},
+		{
+			desc: "pointer type mismatch",
+			params: `[
+				{"name":"Value","value":10}
+			]`,
+			into:   &struct{ Value *string }{},
+			expErr: "type mismatch in field Value. Cannot convert float64 to string",
+		},
+		{
+			desc: "pointer bad namespace",
+			params: `[
+				{"name":"File","value":"bucket","namespace":"S3"}
+			]`,
+			into:   &struct{ File *string }{},
+			expErr: "unknown namespace: S3",
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
@@ -96,7 +112,8 @@ func TestUnmarshalOK(t *testing.T) {
 			{"name":"Parameter","value":"testValue3","key":"testKey3","namespace":"System"},
 			{"name":"Parameter","value":"testValue4","key":"testKey4","namespace":"User Defined"},
 			{"name":"MissingVal","value":"missingKey","namespace":"User Defined"},
-			{"name":"MissingSliceVal","value":"missingKey","namespace":"User Defined"}
+			{"name":"MissingSliceVal","value":"missingKey","namespace":"User Defined"},
+			{"name":"PresentOptionalValue","value":"I am here"}
 		]
 	}`
 	m := flow.Module{}
@@ -118,14 +135,16 @@ func TestUnmarshalOK(t *testing.T) {
 
 	type someText string
 	into := struct {
-		Text            someText
-		Timeout         string
-		MaxDigits       int
-		EncryptEntry    bool
-		Parameter       []flow.KeyValue
-		MissingVal      int
-		MissingSlice    []int
-		MissingSliceVal []int
+		Text                 someText
+		Timeout              string
+		MaxDigits            int
+		EncryptEntry         bool
+		Parameter            []flow.KeyValue
+		MissingVal           int
+		MissingSlice         []int
+		MissingSliceVal      []int
+		OptionalValue        *string
+		PresentOptionalValue *string
 	}{}
 
 	pr := parameterResolver{c}
@@ -134,22 +153,25 @@ func TestUnmarshalOK(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 	if into.Text != "Please enter your date of birth." {
-		t.Errorf("expected Text of %v but got %v", "Please enter your date of birth.", into.Text)
+		t.Errorf("expected Text of %s but got %s", "Please enter your date of birth.", into.Text)
 	}
 	if into.Timeout != "5" {
-		t.Errorf("expected Timeout of %v but got %v", "5", into.Timeout)
+		t.Errorf("expected Timeout of %s but got %s", "5", into.Timeout)
 	}
 	if into.MaxDigits != 8 {
-		t.Errorf("expected MaxDigits of %v but got %v", 8, into.MaxDigits)
+		t.Errorf("expected MaxDigits of %d but got %d", 8, into.MaxDigits)
 	}
 	if into.EncryptEntry != true {
 		t.Errorf("expected EncryptEntry of %v but got %v", true, into.EncryptEntry)
 	}
 	if into.MissingVal != 0 {
-		t.Errorf("expected MissingVal of %v but got %v", 0, into.MissingVal)
+		t.Errorf("expected MissingVal of %d but got %d", 0, into.MissingVal)
 	}
 	if len(into.MissingSlice) != 0 {
 		t.Errorf("expected MissingSlice of %v but got %v", []int{}, into.MissingSlice)
+	}
+	if into.PresentOptionalValue == nil || *into.PresentOptionalValue != "I am here" {
+		t.Errorf("expected PresentOptionalValue of %v but got %v", "I am here", *into.PresentOptionalValue)
 	}
 	expParam := []flow.KeyValue{
 		{K: "testKey1", V: "testValue"},
