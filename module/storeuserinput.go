@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
@@ -16,6 +17,7 @@ type storeUserInputParams struct {
 	MaxDigits        int
 	TextToSpeechType string
 	EncryptEntry     bool
+	TerminatorDigits *string
 }
 
 func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
@@ -34,7 +36,11 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 	}
 	txt := pr.jsonPath(p.Text)
 	call.Send(txt, p.TextToSpeechType == "ssml")
-	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, p.EncryptEntry)
+	terminator := '#'
+	if p.TerminatorDigits != nil {
+		terminator, _ = utf8.DecodeRuneInString(*p.TerminatorDigits)
+	}
+	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, p.EncryptEntry, terminator)
 	if entry == nil {
 		next = m.Branches.GetLink(flow.BranchError)
 		return

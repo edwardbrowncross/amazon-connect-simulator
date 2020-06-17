@@ -49,18 +49,37 @@ func TestStoreUserInput(t *testing.T) {
 			{"name":"DisableCancel","value":true}
 		]
 	}`
+	jsonOKCustomTerminator := `{
+		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
+		"type":"StoreUserInput",
+		"branches":[
+			{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"},
+			{"condition":"Error","transition":"00000000-0000-4000-0000-000000000002"}
+		],
+		"parameters":[
+			{"name":"Text","value":"hello"},
+			{"name":"TextToSpeechType","value":"text"},
+			{"name":"CustomerInputType","value":"Custom"},
+			{"name":"Timeout","value":"7"},
+			{"name":"MaxDigits","value":8},
+			{"name":"EncryptEntry","value":false},
+			{"name":"DisableCancel","value":false},
+			{"name":"TerminatorDigits","value":"0"}
+		]
+	}`
 	testCases := []struct {
-		desc          string
-		module        string
-		state         *testCallState
-		exp           string
-		expPrompt     string
-		expErr        string
-		expSys        map[flow.SystemKey]string
-		expRcvTimeout time.Duration
-		expRcvCount   int
-		expRcvEncrypt bool
-		expEvt        []event.Event
+		desc             string
+		module           string
+		state            *testCallState
+		exp              string
+		expPrompt        string
+		expErr           string
+		expSys           map[flow.SystemKey]string
+		expRcvTimeout    time.Duration
+		expRcvCount      int
+		expRcvTerminator rune
+		expRcvEncrypt    bool
+		expEvt           []event.Event
 	}{
 		{
 			desc:   "wrong module",
@@ -86,10 +105,11 @@ func TestStoreUserInput(t *testing.T) {
 					"prompt": "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 				},
 			}.init(),
-			exp:           "00000000-0000-4000-0000-000000000002",
-			expEvt:        []event.Event{},
-			expPrompt:     "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
-			expRcvEncrypt: true,
+			exp:              "00000000-0000-4000-0000-000000000002",
+			expEvt:           []event.Event{},
+			expPrompt:        "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
+			expRcvEncrypt:    true,
+			expRcvTerminator: '#',
 		},
 		{
 			desc:   "success",
@@ -105,11 +125,29 @@ func TestStoreUserInput(t *testing.T) {
 			expSys: map[flow.SystemKey]string{
 				flow.SystemLastUserInput: "12345678",
 			},
-			expPrompt:     "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
-			expRcvCount:   8,
-			expRcvTimeout: 7 * time.Second,
-			expEvt:        []event.Event{},
-			expRcvEncrypt: true,
+			expPrompt:        "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
+			expRcvCount:      8,
+			expRcvTimeout:    7 * time.Second,
+			expEvt:           []event.Event{},
+			expRcvTerminator: '#',
+			expRcvEncrypt:    true,
+		},
+		{
+			desc:   "success - custom terminator",
+			module: jsonOKCustomTerminator,
+			exp:    "00000000-0000-4000-0000-000000000001",
+			state: testCallState{
+				i: "12345678",
+			}.init(),
+			expSys: map[flow.SystemKey]string{
+				flow.SystemLastUserInput: "12345678",
+			},
+			expPrompt:        "hello",
+			expRcvCount:      8,
+			expRcvTimeout:    7 * time.Second,
+			expEvt:           []event.Event{},
+			expRcvTerminator: '0',
+			expRcvEncrypt:    false,
 		},
 	}
 	for _, tC := range testCases {
@@ -154,6 +192,9 @@ func TestStoreUserInput(t *testing.T) {
 			}
 			if state.rcv.encrypt != tC.expRcvEncrypt {
 				t.Errorf("expected receive encrypt of %v but got %v", tC.expRcvEncrypt, state.rcv.encrypt)
+			}
+			if state.rcv.terminator != tC.expRcvTerminator {
+				t.Errorf("expected receive terminator of %s but got %s", string(tC.expRcvTerminator), string(state.rcv.terminator))
 			}
 			if (tC.expEvt != nil && !reflect.DeepEqual(tC.expEvt, state.events)) || (tC.expEvt == nil && len(state.events) > 0) {
 				t.Errorf("expected events of '%v' but got '%v'", tC.expEvt, state.events)

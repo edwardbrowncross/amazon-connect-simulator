@@ -16,9 +16,10 @@ type testCallState struct {
 	o     string
 	oSSML bool
 	rcv   struct {
-		count   int
-		timeout time.Duration
-		encrypt bool
+		count      int
+		timeout    time.Duration
+		encrypt    bool
+		terminator rune
 	}
 	lambdaIn struct {
 		name  string
@@ -55,10 +56,11 @@ func (st *testCallState) Send(s string, ssml bool) {
 	st.o = s
 	st.oSSML = ssml
 }
-func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool) *string {
+func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool, terminator rune) *string {
 	st.rcv.count = count
 	st.rcv.timeout = timeout
 	st.rcv.encrypt = encrypt
+	st.rcv.terminator = terminator
 	if st.i == "" {
 		return nil
 	}
