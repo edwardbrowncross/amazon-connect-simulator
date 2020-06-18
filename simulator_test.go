@@ -287,7 +287,7 @@ func TestSimulator(t *testing.T) {
 
 	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
 	expect.Prompt().Not().WithSSML().ToContain("3 to hear the results of an AWS Lambda data dip")
-	expect.ToEnter("3")
+	expect.Caller().ToPress('3')
 	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
 	expect.Lambda().WithParameter("butter", "salted").Not().ToBeInvoked()
 	expect.Lambda().WithTimeout(4 * time.Second).WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
@@ -341,11 +341,11 @@ func TestSimulator(t *testing.T) {
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("2 to securely enter content")
-				expect.ToEnter("2")
+				expect.Caller().ToEnter("2")
 				expect.Prompt().Not().ToContain("error")
 				expect.Prompt().ToEqual("This flow enables users to enter information secured by an encryption key you provide.")
 				expect.Prompt().ToContain("Please enter your credit card number")
-				expect.ToEnter("1234098712340987#")
+				expect.Caller().ToEnter("1234098712340987#")
 				expect.Attributes().ToUpdate("EncryptedCreditCard", base64.StdEncoding.EncodeToString([]byte("(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")))
 				expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
 			},
@@ -355,7 +355,7 @@ func TestSimulator(t *testing.T) {
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("4 to set a screen pop for the agent")
-				expect.ToEnter("4")
+				expect.Caller().ToPress('4')
 				expect.Attributes().Unordered().ToUpdateKey("note")
 				expect.Prompt().ToEqual("This sets a note attribute for use in a screenpop.")
 				expect.Transfer().ToQueue("BasicQueue")

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	simulator "github.com/edwardbrowncross/amazon-connect-simulator"
 	"github.com/edwardbrowncross/amazon-connect-simulator/event"
@@ -129,39 +128,9 @@ func (th *Expect) run(m matcher, negate bool, unordered bool) {
 	}
 }
 
-// ToEnter sends the given string as either a numeric entry or as an option selection.
-// If not all characters can be sent, or more characters are required, it errors the test.
-func (th *Expect) ToEnter(input string) {
-	th.t.Helper()
-	th.cancelReady()
-	for i, r := range input {
-		select {
-		case th.c.I <- r:
-			continue
-		case <-time.After(time.Second):
-			th.t.Errorf("expected to be able to send input %s, but was only able to send %d characters", input, i)
-			return
-		}
-	}
-	select {
-	case <-time.After(time.Second):
-		th.t.Errorf("expected input of %s to fill the input, but it did not.", input)
-		th.readyToggle <- true
-	case <-th.ready:
-		break
-	}
-}
-
-// ToWaitForTimeout waits for the current input block to time out.
-func (th *Expect) ToWaitForTimeout() {
-	th.t.Helper()
-	th.cancelReady()
-	select {
-	case <-time.After(time.Second):
-		th.t.Error("expected to wait for timeout, but no input was required")
-		return
-	case th.c.I <- 'T':
-	}
+// Caller simulates actions of the customer as part of the test.
+func (th *Expect) Caller() CallerContext {
+	return CallerContext{th.newTestContext()}
 }
 
 // Prompt offers assertions on prompts spoken by the IVR.
