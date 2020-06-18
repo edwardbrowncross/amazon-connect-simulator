@@ -100,12 +100,12 @@ func TestStoreUserInput(t *testing.T) {
 			desc:   "timeout",
 			module: jsonOK,
 			state: testCallState{
-				i: "",
+				i: "Timeout",
 				external: map[string]string{
 					"prompt": "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 				},
 			}.init(),
-			exp:              "00000000-0000-4000-0000-000000000002",
+			exp:              "00000000-0000-4000-0000-000000000001",
 			expEvt:           []event.Event{},
 			expPrompt:        "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
 			expRcvEncrypt:    true,
