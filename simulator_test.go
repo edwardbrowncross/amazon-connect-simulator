@@ -230,19 +230,22 @@ func TestSimulator(t *testing.T) {
 	var call *Call
 
 	// Try to start call without starting flow set. Expect error.
-	_, err = sim.StartCall(CallConfig{})
+	_, err = sim.StartCall(CallConfig{
+		SourceNumber: "+447878123456",
+		DestNumber:   "+441121234567",
+	})
 	if err == nil {
 		t.Error("expected error starting call early but got none.")
 	}
 
 	// Set incorrect starting flow. Expect error.
-	err = sim.SetStartingFlow("Sample self destruct flow")
+	err = sim.SetStartingFlowFor("+441121234567", "Sample self destruct flow")
 	if err == nil {
 		t.Error("expected error setting non-existant starting flow but got none.")
 	}
 
 	// Set correct starting flow.
-	err = sim.SetStartingFlow("Sample inbound flow (first contact experience)")
+	err = sim.SetStartingFlowFor("+441121234567", "Sample inbound flow (first contact experience)")
 	if err != nil {
 		t.Fatalf("unexpected error setting starting flow: %v", err)
 	}
@@ -251,6 +254,14 @@ func TestSimulator(t *testing.T) {
 	sim.SetEncryption(func(in string) []byte {
 		return []byte(fmt.Sprintf("(I am encrypting)>༼ つ ◕_◕ ༽つ%s", in))
 	})
+
+	// Start a call without a dest number. Expect error.
+	call, err = sim.StartCall(CallConfig{
+		SourceNumber: "+447878123456",
+	})
+	if err == nil {
+		t.Error("expected error starting a call without a destination number")
+	}
 
 	// Start a call.
 	call, err = sim.StartCall(CallConfig{

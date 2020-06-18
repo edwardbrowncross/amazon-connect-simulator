@@ -11,11 +11,11 @@ import (
 
 // Simulator is capable of starting new simulated call flows.
 type Simulator struct {
-	lambdas      map[string]interface{}
-	flows        map[string]flow.Flow
-	modules      map[flow.ModuleID]flow.Module
-	encrypt      func(string) []byte
-	startingFlow *flow.Flow
+	lambdas map[string]interface{}
+	flows   map[string]flow.Flow
+	modules map[flow.ModuleID]flow.Module
+	encrypt func(string) []byte
+	telFlow map[string]flow.Flow
 }
 
 // New creates a new call simulator.
@@ -25,6 +25,7 @@ func New() Simulator {
 		lambdas: map[string]interface{}{},
 		flows:   map[string]flow.Flow{},
 		modules: map[flow.ModuleID]flow.Module{},
+		telFlow: map[string]flow.Flow{},
 		encrypt: func(in string) []byte { return []byte(in) },
 	}
 }
@@ -75,15 +76,16 @@ func (cs *Simulator) RegisterLambda(name string, fn interface{}) error {
 	return nil
 }
 
-// SetStartingFlow specifies the name of the flow that should be run when a new call comes in.
+// SetStartingFlowFor specifies the name of the flow that should be run when a new call comes in to a given number.
+// The telephone number should match what will be used when creating a call.
 // The name is the full name given to the flow in the Amazon Connect ui.
 // You must run this once before starting a simulated call.
-func (cs *Simulator) SetStartingFlow(flowName string) error {
+func (cs *Simulator) SetStartingFlowFor(tel string, flowName string) error {
 	f, ok := cs.flows[flowName]
 	if !ok {
 		return errors.New("starting flow not found. Load the flow with LoadFlow before calling this method")
 	}
-	cs.startingFlow = &f
+	cs.telFlow[tel] = f
 	return nil
 }
 
@@ -97,10 +99,14 @@ func (cs *Simulator) SetEncryption(encryptor func(in string) (encrypted []byte))
 // StartCall starts a new call asynchronously and returns a Call object for interacting with that call.
 // Many independent calls can be spawned from one simulator.
 func (cs *Simulator) StartCall(config CallConfig) (*Call, error) {
-	if cs.startingFlow == nil {
-		return nil, errors.New("no starting flow set. Call SetStartingFlow before starting a call")
+	if config.DestNumber == "" {
+		return nil, errors.New("a destination number must be provided in order to start a flow")
 	}
-	return newCall(config, &simulatorConnector{cs}, *&cs.startingFlow.Start), nil
+	start, ok := cs.telFlow[config.DestNumber]
+	if !ok {
+		return nil, errors.New("no starting flow set. Call SetStartingFlowFor before starting a call")
+	}
+	return newCall(config, &simulatorConnector{cs}, start.Start), nil
 }
 
 // simulatorConnector exposes methods for modules to get information from the base simulator.
