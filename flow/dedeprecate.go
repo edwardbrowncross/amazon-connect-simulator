@@ -16,9 +16,9 @@ func Dedeprecate(flow Flow) Flow {
 			flow.Modules[i] = mod
 		case ModuleDeprecatedSetScreenPop:
 			mod.Type = ModuleSetAttributes
-			key := mod.Parameters.Get("key")
-			val := mod.Parameters.Get("value")
-			if key == nil || val == nil {
+			key, kok := mod.Parameters.Get("key")
+			val, vok := mod.Parameters.Get("value")
+			if !kok || !vok {
 				continue
 			}
 			mod.Parameters = ModuleParameterList{
@@ -26,20 +26,20 @@ func Dedeprecate(flow Flow) Flow {
 			}
 			flow.Modules[i] = mod
 		case ModuleDeprecatedTransferToFlow:
-			cfid := mod.Parameters.Get("ContactFlowId")
+			cfid, ok := mod.Parameters.Get("ContactFlowId")
 			var metadata struct {
 				ContactFlow struct {
 					Text string `json:"text"`
 				} `json:"ContactFlow"`
 			}
 			err := json.Unmarshal(mod.Metadata, &metadata)
-			if cfid == nil || err != nil {
+			if !ok || err != nil {
 				continue
 			}
 			mod.Type = ModuleTransfer
 			cfid.ResourceName = metadata.ContactFlow.Text
 			mod.Parameters = ModuleParameterList{
-				*cfid,
+				cfid,
 			}
 			mod.Target = TargetFlow
 			flow.Modules[i] = mod
@@ -48,7 +48,8 @@ func Dedeprecate(flow Flow) Flow {
 			mod.Target = TargetQueue
 			flow.Modules[i] = mod
 		case ModuleSetQueue:
-			if mod.Target == ModuleSetQueue || mod.Parameters.Get("Queue") != nil && mod.Parameters.Get("Queue").ResourceName == "" {
+			q, ok := mod.Parameters.Get("Queue")
+			if mod.Target == ModuleSetQueue || ok && q.ResourceName == "" {
 				var metadata struct {
 					Queue struct {
 						Text string `json:"text"`
@@ -58,10 +59,9 @@ func Dedeprecate(flow Flow) Flow {
 				if err != nil {
 					continue
 				}
-				q := mod.Parameters.Get("Queue")
 				q.ResourceName = metadata.Queue.Text
 				mod.Parameters = ModuleParameterList{
-					*q,
+					q,
 				}
 				flow.Modules[i] = mod
 			}

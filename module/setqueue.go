@@ -13,8 +13,8 @@ func (m setQueue) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	if m.Type != flow.ModuleSetQueue {
 		return nil, fmt.Errorf("module of type %s being run as setQueue", m.Type)
 	}
-	p := m.Parameters.Get("Queue")
-	if p == nil {
+	p, ok := m.Parameters.Get("Queue")
+	if !ok {
 		return nil, errors.New("missing Queue parameter")
 	}
 	call.SetSystem(flow.SystemQueueARN, p.Value.(string))

@@ -165,13 +165,13 @@ type ModuleParameterList []ModuleParameter
 
 // Get gets a single parameter with the given name.
 // Use it when there is only one parameter with that name.
-func (mpl ModuleParameterList) Get(named string) *ModuleParameter {
+func (mpl ModuleParameterList) Get(named string) (ModuleParameter, bool) {
 	for _, p := range mpl {
 		if p.Name == named {
-			return &p
+			return p, true
 		}
 	}
-	return nil
+	return ModuleParameter{}, false
 }
 
 // List gets a list of parameters with the given name.

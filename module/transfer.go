@@ -16,8 +16,8 @@ func (m transfer) Run(call CallConnector) (next *flow.ModuleID, err error) {
 	}
 	switch m.Target {
 	case flow.TargetFlow:
-		cfid := m.Parameters.Get("ContactFlowId")
-		if cfid == nil {
+		cfid, ok := m.Parameters.Get("ContactFlowId")
+		if !ok {
 			return nil, errors.New("missing ContactFlowId parameter")
 		}
 		next = call.GetFlowStart(cfid.ResourceName)
