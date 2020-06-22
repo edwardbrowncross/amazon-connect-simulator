@@ -33,6 +33,8 @@ type testCallState struct {
 	system       map[flow.SystemKey]string
 	flowStart    map[string]flow.ModuleID
 	events       []event.Event
+	inHours      func(string, bool, time.Time) (bool, error)
+	time         time.Time
 }
 
 func (st testCallState) init() *testCallState {
@@ -113,6 +115,9 @@ func (st *testCallState) GetFlowStart(flowName string) *flow.ModuleID {
 }
 func (st *testCallState) Emit(event event.Event) {
 	st.events = append(st.events, event)
+}
+func (st *testCallState) IsInHours(name string, isQueue bool) (bool, error) {
+	return st.inHours(name, isQueue, st.time)
 }
 
 func TestMakeRunner(t *testing.T) {

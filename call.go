@@ -28,12 +28,17 @@ type Call struct {
 	External    map[string]string
 	ContactData map[string]string
 	System      map[flow.SystemKey]string
+	Time        time.Time
 }
 
 // CallConfig is data unique to this particular call.
 type CallConfig struct {
+	// SourceNumber is the customer's phone number.
 	SourceNumber string
-	DestNumber   string
+	// SourceNumber is the number the customer dialed.
+	DestNumber string
+	// Time is the time the customer is phoning (for in-hours check).
+	Time time.Time
 }
 
 // New is used by the simulator to create a new call.
@@ -52,9 +57,13 @@ func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call
 		External:    map[string]string{},
 		ContactData: map[string]string{},
 		System:      map[flow.SystemKey]string{},
+		Time:        conf.Time,
+	}
+	if c.Time.IsZero() {
+		c.Time = time.Now()
 	}
 	var contactID string
-	if uuid, err := uuid.NewUUID(); err != nil {
+	if uuid, err := uuid.NewUUID(); err == nil {
 		contactID = uuid.String()
 	}
 	c.System[flow.SystemCustomerNumber] = conf.SourceNumber
@@ -224,6 +233,10 @@ func (s *callConnector) GetSystem(key flow.SystemKey) *string {
 		return nil
 	}
 	return &val
+}
+
+func (s *callConnector) IsInHours(name string, isQueue bool) (bool, error) {
+	return s.simulatorConnector.IsInHours(name, isQueue, s.Time)
 }
 
 // ClearExternal allows clearing of all externalvalues in the state machine.

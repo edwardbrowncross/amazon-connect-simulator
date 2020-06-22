@@ -22,6 +22,7 @@ type CallConnector interface {
 	SetSystem(key flow.SystemKey, value string)
 	InvokeLambda(named string, inParams json.RawMessage, timeout time.Duration) (outJSON string, outErr error, err error)
 	GetFlowStart(flowName string) *flow.ModuleID
+	IsInHours(name string, isQueue bool) (bool, error)
 }
 
 // Runner takes a call context and returns the ID of the next block to run, or nil if the call is over.

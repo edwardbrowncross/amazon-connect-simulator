@@ -168,7 +168,7 @@ var sampleQueueConfig = `{
         {"id":"9ec9348c-c517-403f-935b-9c3bb8e35c1b","type":"CreateCallback","branches":[{"condition":"Success","transition":"0af94805-014a-4fb1-8a35-070fa35e2e22"},{"condition":"Error","transition":"43d31362-47a0-4897-8592-32ffc70b3b3c"}],"parameters":[{"name":"InitialDelaySeconds","value":5},{"name":"RetryDelaySeconds","value":600},{"name":"MaxRetryAttempts","value":1}],"metadata":{"position":{"x":2206,"y":74},"useDynamic":false,"queue":null}}
     ],
     "version":"1","type":"contactFlow","start":"5cfb3fa1-78a7-4133-b553-ca7198181192",
-    "metadata":{"entryPointPosition":{"x":20,"y":20},"snapToGrid":false,"name":"Sample queue configurations flow","description":"Puts a customer in queue and gives them the option to be first in queue, last in queue or to be called back.","type":"contactFlow","status":"published","hash":"d08cf945ba9f6f25b6c7a2a4990c48648a2fac8dd66bccfc73ab9c97337627e2"}
+    "metadata":{"entryPointPosition":{"x":20,"y":20},"snapToGrid":false,"name":"Sample Queue Configurations Flow","description":"Puts a customer in queue and gives them the option to be first in queue, last in queue or to be called back.","type":"contactFlow","status":"published","hash":"d08cf945ba9f6f25b6c7a2a4990c48648a2fac8dd66bccfc73ab9c97337627e2"}
 }`
 
 func TestSimulator(t *testing.T) {
@@ -250,6 +250,11 @@ func TestSimulator(t *testing.T) {
 	// Set a custom encryption function.
 	sim.SetEncryption(func(in string) []byte {
 		return []byte(fmt.Sprintf("(I am encrypting)>༼ つ ◕_◕ ༽つ%s", in))
+	})
+
+	// Set a custom hours function.
+	sim.SetInHoursCheck(func(name string, isQueue bool, t time.Time) (bool, error) {
+		return t.Hour() >= 9 && t.Hour() < 17, nil
 	})
 
 	// Start a call.
@@ -339,7 +344,7 @@ func TestSimulator(t *testing.T) {
 			},
 		},
 		{
-			desc: "queue transfer",
+			desc: "setting attributes",
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("4 to set a screen pop for the agent")
@@ -347,6 +352,24 @@ func TestSimulator(t *testing.T) {
 				expect.Attributes().Unordered().ToUpdateKey("note")
 				expect.Prompt().ToEqual("This sets a note attribute for use in a screenpop.")
 				expect.Transfer().ToQueue("BasicQueue")
+			},
+		},
+		{
+			desc: "in hours",
+			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567", Time: time.Date(2020, 06, 22, 13, 00, 0, 0, time.UTC)},
+			assert: func(expect *flowtest.Expect) {
+				expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
+				expect.ToEnter("1")
+				expect.Prompt().Not().ToEqual("We are not able to take your call right now. Goodbye.")
+			},
+		},
+		{
+			desc: "out of hours",
+			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567", Time: time.Date(2020, 06, 22, 21, 00, 0, 0, time.UTC)},
+			assert: func(expect *flowtest.Expect) {
+				expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
+				expect.ToEnter("1")
+				expect.Prompt().ToEqual("We are not able to take your call right now. Goodbye.")
 			},
 		},
 	}

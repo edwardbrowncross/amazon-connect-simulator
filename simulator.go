@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/edwardbrowncross/amazon-connect-simulator/flow"
 )
@@ -15,6 +16,7 @@ type Simulator struct {
 	flows        map[string]flow.Flow
 	modules      map[flow.ModuleID]flow.Module
 	encrypt      func(string) []byte
+	isInHours    func(string, bool, time.Time) (bool, error)
 	startingFlow *flow.Flow
 }
 
@@ -22,10 +24,11 @@ type Simulator struct {
 // It is created blank and must be set up using its attached methods.
 func New() Simulator {
 	return Simulator{
-		lambdas: map[string]interface{}{},
-		flows:   map[string]flow.Flow{},
-		modules: map[flow.ModuleID]flow.Module{},
-		encrypt: func(in string) []byte { return []byte(in) },
+		lambdas:   map[string]interface{}{},
+		flows:     map[string]flow.Flow{},
+		modules:   map[flow.ModuleID]flow.Module{},
+		encrypt:   func(in string) []byte { return []byte(in) },
+		isInHours: func(string, bool, time.Time) (bool, error) { return true, nil },
 	}
 }
 
@@ -94,6 +97,14 @@ func (cs *Simulator) SetEncryption(encryptor func(in string) (encrypted []byte))
 	cs.encrypt = encryptor
 }
 
+// SetInHoursCheck adds logic used by the checkHoursOfOperation block to determine if we are in operating hours.
+// The first parameter of the provided function will either be the name of a Queue or the name of an Hours of Operation, as indicated by the second parameter.
+// It should return true if we are in operating hours and false if not.
+// Returning an error indicates that the given queue/hours does not exist or does not have hours defined. The call will proceed down the error path.
+func (cs *Simulator) SetInHoursCheck(checker func(name string, isQueue bool, time time.Time) (inOperation bool, err error)) {
+	cs.isInHours = checker
+}
+
 // StartCall starts a new call asynchronously and returns a Call object for interacting with that call.
 // Many independent calls can be spawned from one simulator.
 func (cs *Simulator) StartCall(config CallConfig) (*Call, error) {
@@ -146,4 +157,8 @@ func (cs *simulatorConnector) InvokeLambda(named string, withJSON string) (outJS
 		return "", nil, fmt.Errorf("unknown lambda: %s", named)
 	}
 	return invokeLambda(fn, withJSON)
+}
+
+func (cs *simulatorConnector) IsInHours(name string, isQueue bool, time time.Time) (bool, error) {
+	return cs.isInHours(name, isQueue, time)
 }
