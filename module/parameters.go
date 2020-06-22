@@ -52,6 +52,9 @@ func (call parameterResolver) resolve(p flow.ModuleParameter) (val interface{}, 
 		}
 	}
 	if p.Key != "" {
+		if val == nil {
+			val = ""
+		}
 		val = flow.KeyValue{
 			K: p.Key,
 			V: fmt.Sprintf("%v", val),
@@ -92,11 +95,11 @@ func (call parameterResolver) unmarshal(plist flow.ModuleParameterList, into int
 				intov.Field(i).Set(vals)
 			}
 		case reflect.Ptr:
-			p := plist.Get(f.Name)
-			if p == nil {
+			p, ok := plist.Get(f.Name)
+			if !ok {
 				continue
 			}
-			val, err := call.resolve(*p)
+			val, err := call.resolve(p)
 			if err != nil {
 				return err
 			}
@@ -110,11 +113,11 @@ func (call parameterResolver) unmarshal(plist flow.ModuleParameterList, into int
 			intov.Field(i).Set(reflect.New(f.Type.Elem()))
 			intov.Field(i).Elem().Set(valv.Convert(f.Type.Elem()))
 		default:
-			p := plist.Get(f.Name)
-			if p == nil {
+			p, ok := plist.Get(f.Name)
+			if !ok {
 				return fmt.Errorf("missing parameter %s", f.Name)
 			}
-			val, err := call.resolve(*p)
+			val, err := call.resolve(p)
 			if err != nil {
 				return err
 			}

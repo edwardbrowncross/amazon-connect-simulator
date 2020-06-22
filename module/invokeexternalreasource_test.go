@@ -77,7 +77,8 @@ func TestInvokeExternalResource(t *testing.T) {
 			{"name":"FunctionArn","value":"arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn","namespace":null},
 			{"name":"TimeLimit","value":"1"},
 			{"name":"Parameter","key":"input","value":"Stored customer input","namespace":"System"},
-			{"name":"Parameter","key":"prevCount","value":"count","namespace":"External"}
+			{"name":"Parameter","key":"prevCount","value":"count","namespace":"External"},
+			{"name":"Parameter","key":"missing","value":"missing","namespace":"External"}
 		],
 		"target": "Lambda"
 	}`
@@ -167,7 +168,7 @@ func TestInvokeExternalResource(t *testing.T) {
 				lambdaOut: `{"newCount": 5}`,
 			}.init(),
 			expLambdaName:  "arn:aws:lambda:eu-west-2:456789012345:function:my-lambda-fn",
-			expLambdaInput: `{"input":"12345","prevCount":"4"}`,
+			expLambdaInput: `{"input":"12345","prevCount":"4","missing":""}`,
 			exp:            "00000000-0000-4000-0000-000000000001",
 			expEvt:         []event.Event{},
 			expExternal: map[string]string{
