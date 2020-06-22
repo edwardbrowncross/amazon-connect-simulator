@@ -165,6 +165,9 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bo
 		got = append(got, <-s.i)
 	}
 	if got[len(got)-1] == terminator {
+		if len(got) == 1 {
+			return string(got)
+		}
 		got = got[:len(got)-1]
 	}
 
