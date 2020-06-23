@@ -23,6 +23,12 @@ func (tc TransferContext) ToFlow(named string) {
 	tc.run(flowTransferMatcher{named})
 }
 
+// ToNumber asserts that the call was transfered to an external caller.
+func (tc TransferContext) ToNumber(tel string) {
+	tc.t.Helper()
+	tc.run(numberTransferMatcher{tel})
+}
+
 // Never asserts that the following assertions will never match for the durtion of the call.
 func (tc TransferContext) Never() TransferContext {
 	tc.never()
@@ -71,4 +77,23 @@ func (m flowTransferMatcher) match(evt event.Event) (match bool, pass bool, got 
 
 func (m flowTransferMatcher) expected() string {
 	return fmt.Sprintf("to be transfered to flow '%s'", m.flowName)
+}
+
+type numberTransferMatcher struct {
+	tel string
+}
+
+func (m numberTransferMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.TransferNumberType {
+		return false, false, ""
+	}
+	e := evt.(event.NumberTransferEvent)
+	match = true
+	got = e.Tel
+	pass = bool(e.Tel == m.tel)
+	return
+}
+
+func (m numberTransferMatcher) expected() string {
+	return fmt.Sprintf("to be transfered to external number '%s'", m.tel)
 }

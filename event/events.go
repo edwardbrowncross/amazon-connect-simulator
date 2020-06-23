@@ -17,6 +17,7 @@ const (
 	BranchType                 = "Branch"
 	TransferQueueType          = "TransferQueue"
 	TransferFlowType           = "TransferFlow"
+	TransferNumberType         = "TransferFlow"
 	DisconnectType             = "Disconnect"
 	UpdateContactDataType      = "UpdateContactData"
 	InvokeLambdaType           = "InvokeLambda"
@@ -117,6 +118,16 @@ type FlowTransferEvent struct {
 // Type returns TransferFlowType.
 func (e FlowTransferEvent) Type() Type {
 	return TransferFlowType
+}
+
+// NumberTransferEvent is emitted when a caller is transfered to an external number.
+type NumberTransferEvent struct {
+	Tel string
+}
+
+// Type returns TransferNumberType.
+func (e NumberTransferEvent) Type() Type {
+	return TransferNumberType
 }
 
 // DisconnectEvent is emitted when the flow is terminated.

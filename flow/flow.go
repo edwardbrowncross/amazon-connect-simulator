@@ -49,10 +49,11 @@ const (
 
 // Values used in the module's target field.
 const (
-	TargetFlow   ModuleTarget = "Flow"
-	TargetLambda              = "Lambda"
-	TargetQueue               = "Queue"
-	TargetDigits              = "Digits"
+	TargetFlow        ModuleTarget = "Flow"
+	TargetLambda                   = "Lambda"
+	TargetQueue                    = "Queue"
+	TargetDigits                   = "Digits"
+	TargetPhoneNumber              = "PhoneNumber"
 )
 
 // The three places you can look up a dynamic value.

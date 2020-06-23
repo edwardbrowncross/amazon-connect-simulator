@@ -34,6 +34,20 @@ func (m transfer) Run(call CallConnector) (next *flow.ModuleID, err error) {
 		}
 		call.Emit(event.QueueTransferEvent{QueueARN: *arn, QueueName: *queue})
 		return nil, nil
+	case flow.TargetPhoneNumber:
+		blind, ok := m.Parameters.Get("BlindTransfer")
+		if _, isBool := blind.Value.(bool); !ok || !isBool {
+			return nil, errors.New("missing BlindTransfer parameter")
+		}
+		num, ok := m.Parameters.Get("PhoneNumber")
+		if _, isString := num.Value.(string); !ok || !isString {
+			return nil, errors.New("missing PhoneNumber parameter")
+		}
+		call.Emit(event.NumberTransferEvent{Tel: num.Value.(string)})
+		if blind.Value.(bool) {
+			return nil, nil
+		}
+		return m.Branches.GetLink(flow.BranchSuccess), nil
 	default:
 		return nil, fmt.Errorf("unhandled transfer target: %s", m.Target)
 	}
