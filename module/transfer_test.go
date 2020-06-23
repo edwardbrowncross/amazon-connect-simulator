@@ -49,6 +49,35 @@ func TestTransfer(t *testing.T) {
 		"parameters":[],
 		"target": "Queue"
 	}`
+	jsonBlindNumberOK := `{
+		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
+		"type":"Transfer",
+		"branches":[
+			{"condition":"Error","transition":"00000000-0000-4000-0000-000000000002"}
+		],
+		"parameters":[
+			{"name":"TimeLimit","value":"30"},
+			{"name":"BlindTransfer","value":true},
+			{"name":"PhoneNumber","value":"+441234567890"}
+		],
+		"target": "PhoneNumber"
+	}`
+	jsonNumberOK := `{
+		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
+		"type":"Transfer",
+		"branches":[
+			{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"},
+			{"condition":"CallFailure","transition":"00000000-0000-4000-0000-000000000002"},
+			{"condition":"Timeout","transition":"00000000-0000-4000-0000-000000000003"},
+			{"condition":"Error","transition":"00000000-0000-4000-0000-000000000004"}
+		],
+		"parameters":[
+			{"name":"TimeLimit","value":"30"},
+			{"name":"BlindTransfer","value":false},
+			{"name":"PhoneNumber","value":"+441234567890"}
+		],
+		"target": "PhoneNumber"
+	}`
 	testCases := []struct {
 		desc   string
 		module string
@@ -116,6 +145,22 @@ func TestTransfer(t *testing.T) {
 			exp: "",
 			expEvt: []event.Event{
 				event.QueueTransferEvent{QueueName: "complaints", QueueARN: "arn:aws:connect:eu-west-2:456789012345:instance/ffffffff-ffff-4000-ffff-ffffffffffff/queue/ffffffff-0000-4000-0000-ffffffff0001"},
+			},
+		},
+		{
+			desc:   "success - blind number",
+			module: jsonBlindNumberOK,
+			exp:    "",
+			expEvt: []event.Event{
+				event.NumberTransferEvent{Tel: "+441234567890"},
+			},
+		},
+		{
+			desc:   "success - resumable number",
+			module: jsonNumberOK,
+			exp:    "00000000-0000-4000-0000-000000000001",
+			expEvt: []event.Event{
+				event.NumberTransferEvent{Tel: "+441234567890"},
 			},
 		},
 	}
