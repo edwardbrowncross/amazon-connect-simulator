@@ -137,14 +137,16 @@ func FormatCoverageReport(report []CoverageReportFlow, colors bool) string {
 			buf.WriteString(fmt.Sprintf("\t%s (%s):\n", m.Type, m.ID))
 			for _, b := range m.Branches {
 				c := fmt.Sprintf("%v", b.Covered)
+				c2 := ""
 				if colors {
 					if b.Covered {
 						c = "\u001b[32m"
 					} else {
 						c = "\u001b[31m"
 					}
+					c2 = "\u001b[0m"
 				}
-				buf.WriteString(fmt.Sprintf("\t\t%s %s (%s)\u001b[0m\n", c, b.Type, b.Dest))
+				buf.WriteString(fmt.Sprintf("\t\t%s %s (%s)%s\n", c, b.Type, b.Dest, c2))
 			}
 		}
 	}
