@@ -38,16 +38,34 @@ func (tc LambdaContext) WithParameter(key string, value string) LambdaContext {
 	return tc
 }
 
+// WithReturns adds an assertion that the ARN of the invoked lambda returned values including those given.
+func (tc LambdaContext) WithReturns(params map[string]string) LambdaContext {
+	tc.addMatcher(lambdaReturnsMatcher{params})
+	return tc
+}
+
+// WithReturn adds an assertion that the ARN of the invoked lambda returned values including the one given.
+func (tc LambdaContext) WithReturn(key string, value string) LambdaContext {
+	tc.addMatcher(lambdaReturnsMatcher{map[string]string{key: value}})
+	return tc
+}
+
 // ToBeInvoked asserts that a lambda was invoked.
 func (tc LambdaContext) ToBeInvoked() {
 	tc.t.Helper()
 	tc.run(lambdaCallMatcher{})
 }
 
-// ToReturnError asserts that a lambda was invoked.
-func (tc LambdaContext) ToReturnError(err error) {
+// ToFail asserts that a lambda was invoked and returned an error.
+func (tc LambdaContext) ToFail() {
 	tc.t.Helper()
-	tc.run(lambdaErrorMatcher{err})
+	tc.run(lambdaFailureMatcher{})
+}
+
+// ToSucceed asserts that a lambda was invoked and did not return an error.
+func (tc LambdaContext) ToSucceed() {
+	tc.t.Helper()
+	tc.run(lambdaSuccessMatcher{})
 }
 
 // Not negates the meaning of the following assertion.
@@ -85,7 +103,7 @@ func (m lambdaCallMatcher) expected() string {
 }
 
 type lambdaErrorMatcher struct {
-	err error
+	err string
 }
 
 func (m lambdaErrorMatcher) match(evt event.Event) (match bool, pass bool, got string) {
@@ -94,17 +112,17 @@ func (m lambdaErrorMatcher) match(evt event.Event) (match bool, pass bool, got s
 	}
 	e := evt.(event.InvokeLambdaEvent)
 	match = true
-	pass = e.Error != nil
-	if e.Error == nil {
+	pass = e.ResponseError != nil && e.ResponseError.Error() == m.err
+	if e.ResponseError == nil {
 		got = "nil"
 	} else {
-		got = e.Error.Error()
+		got = e.ResponseError.Error()
 	}
 	return
 }
 
 func (m lambdaErrorMatcher) expected() string {
-	return fmt.Sprintf("to return error: %v", m.err)
+	return fmt.Sprintf("with error return: %s", m.err)
 }
 
 type lambdaARNMatcher struct {
@@ -154,6 +172,35 @@ func (m lambdaParametersMatcher) expected() string {
 	return fmt.Sprintf("with parameters %v", m.params)
 }
 
+type lambdaReturnsMatcher struct {
+	returns map[string]string
+}
+
+func (m lambdaReturnsMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	e := evt.(event.InvokeLambdaEvent)
+	match = true
+	var p map[string]string
+	if err := json.Unmarshal([]byte(e.ResponseJSON), &p); err != nil {
+		got = "invalid json return"
+		return
+	}
+	got = fmt.Sprintf("%v", p)
+	pass = true
+	for k, expV := range m.returns {
+		if gotV, ok := p[k]; !ok || gotV != expV {
+			pass = false
+		}
+	}
+	return
+}
+
+func (m lambdaReturnsMatcher) expected() string {
+	return fmt.Sprintf("with return values %v", m.returns)
+}
+
 type lambdaTimeoutMatcher struct {
 	timeout time.Duration
 }
@@ -171,4 +218,48 @@ func (m lambdaTimeoutMatcher) match(evt event.Event) (match bool, pass bool, got
 
 func (m lambdaTimeoutMatcher) expected() string {
 	return fmt.Sprintf("with timeout of %d seconds", m.timeout/time.Second)
+}
+
+type lambdaSuccessMatcher struct{}
+
+func (m lambdaSuccessMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	e := evt.(event.InvokeLambdaEvent)
+	match = true
+	pass = e.ResponseError == nil && e.Error == nil
+	if e.ResponseError != nil {
+		got = e.ResponseError.Error()
+	} else if e.Error != nil {
+		got = e.Error.Error()
+	}
+	return
+}
+
+func (m lambdaSuccessMatcher) expected() string {
+	return "to invoke lambda sucessfully"
+}
+
+type lambdaFailureMatcher struct{}
+
+func (m lambdaFailureMatcher) match(evt event.Event) (match bool, pass bool, got string) {
+	if evt.Type() != event.InvokeLambdaType {
+		return false, false, ""
+	}
+	e := evt.(event.InvokeLambdaEvent)
+	match = true
+	pass = e.ResponseError != nil
+	if e.ResponseError == nil {
+		got = "nil"
+	} else if e.Error != nil {
+		got = fmt.Sprintf("invocation error: %v", e.Error)
+	} else {
+		got = e.ResponseError.Error()
+	}
+	return
+}
+
+func (m lambdaFailureMatcher) expected() string {
+	return "to fail to invoke lambda"
 }

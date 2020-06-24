@@ -290,7 +290,7 @@ func TestSimulator(t *testing.T) {
 	expect.Caller().ToPress('3')
 	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
 	expect.Lambda().WithParameter("butter", "salted").Not().ToBeInvoked()
-	expect.Lambda().WithTimeout(4 * time.Second).WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
+	expect.Lambda().WithTimeout(4*time.Second).WithARN("state-lookup").Not().WithARN("clearly-not-this-one").WithReturn("State", "United Kingdom").ToSucceed()
 	expect.Prompt().ToEqual("Based on the number you are calling from, your area code is located in United Kingdom")
 	expect.Prompt().ToEqual("Now returning you to the main menu.")
 	expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
@@ -327,7 +327,6 @@ func TestSimulator(t *testing.T) {
 	} else if p != "35c77601-311e-4e0b-85a5-883381ac2655" {
 		t.Errorf("expected debugger to pause at 35c77601-311e-4e0b-85a5-883381ac2655 but it paused at %s", p)
 	}
-	debugger.Detatch()
 	call.Terminate()
 
 	// Run more tests.
