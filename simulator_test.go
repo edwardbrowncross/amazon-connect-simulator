@@ -285,9 +285,13 @@ func TestSimulator(t *testing.T) {
 	expect.Prompt().Never().Not().WithVoice("Joanna").ToPlay()
 	expect.Lambda().WithARN("self-destruct").Never().ToBeInvoked()
 
+	press3 := func(exp *flowtest.Expect) {
+		exp.Caller().ToPress('3')
+	}
+
 	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
 	expect.Prompt().Not().WithSSML().ToContain("3 to hear the results of an AWS Lambda data dip")
-	expect.Caller().ToPress('3')
+	expect.To(press3)
 	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
 	expect.Lambda().WithParameter("butter", "salted").Not().ToBeInvoked()
 	expect.Lambda().WithTimeout(4*time.Second).WithARN("state-lookup").Not().WithARN("clearly-not-this-one").WithReturn("State", "United Kingdom").ToSucceed()

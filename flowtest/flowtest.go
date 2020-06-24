@@ -153,6 +153,12 @@ func (th *Expect) Attributes() AttributesContext {
 	return AttributesContext{th.newTestContext()}
 }
 
+// To accepts an assertion function that will be run immediately.
+// This can be use for modularising tests while maintaining the fluent interface.
+func (th *Expect) To(assert func(expect *Expect)) {
+	assert(th)
+}
+
 func (th *Expect) newTestContext() testContext {
 	return testContext{expect: th, t: th.t}.init()
 }
