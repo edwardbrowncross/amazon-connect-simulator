@@ -154,11 +154,12 @@ func (th *Expect) Attributes() AttributesContext {
 }
 
 func (th *Expect) newTestContext() testContext {
-	return testContext{Expect: th}.init()
+	return testContext{expect: th, t: th.t}.init()
 }
 
 type testContext struct {
-	*Expect
+	expect         *Expect
+	t              *testing.T
 	matchers       matcherChain
 	negateNext     bool
 	matchNever     bool
@@ -184,13 +185,13 @@ func (tc *testContext) run(m matcher) {
 	tc.t.Helper()
 	if tc.matchNever {
 		tc.addMatcher(m)
-		tc.Expect.nevers = append(tc.Expect.nevers, tc.matchers)
+		tc.expect.nevers = append(tc.expect.nevers, tc.matchers)
 		return
 	}
 	negate := tc.negateNext
 	tc.negateNext = false
 	tc.addMatcher(m)
-	tc.Expect.run(tc.matchers, negate, tc.matchUnordered)
+	tc.expect.run(tc.matchers, negate, tc.matchUnordered)
 }
 
 func (tc *testContext) not() {
