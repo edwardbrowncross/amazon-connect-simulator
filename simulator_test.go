@@ -251,7 +251,7 @@ func TestSimulator(t *testing.T) {
 	}
 
 	// Set a custom encryption function.
-	sim.SetEncryption(func(in string) []byte {
+	sim.SetEncryption(func(in string, keyID string, cert []byte) []byte {
 		return []byte(fmt.Sprintf("(I am encrypting)>༼ つ ◕_◕ ༽つ%s", in))
 	})
 

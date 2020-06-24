@@ -1,6 +1,8 @@
 package module
 
 import (
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -18,6 +20,8 @@ type storeUserInputParams struct {
 	TextToSpeechType string
 	EncryptEntry     bool
 	TerminatorDigits *string
+	EncryptionKeyId  *string
+	EncryptionKey    *string
 }
 
 func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error) {
@@ -40,7 +44,17 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 	if p.TerminatorDigits != nil {
 		terminator, _ = utf8.DecodeRuneInString(*p.TerminatorDigits)
 	}
-	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, p.EncryptEntry, terminator)
+	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, terminator)
+	if p.EncryptEntry {
+		if p.EncryptionKey == nil {
+			return nil, errors.New("missing encryption key")
+		}
+		if p.EncryptionKeyId == nil {
+			return nil, errors.New("missing encryption key ID")
+		}
+		enc := call.Encrypt(entry, *p.EncryptionKeyId, []byte(*p.EncryptionKey))
+		entry = base64.StdEncoding.EncodeToString(enc)
+	}
 	call.SetSystem(flow.SystemLastUserInput, entry)
 	next = m.Branches.GetLink(flow.BranchSuccess)
 	return

@@ -20,7 +20,10 @@ type testCallState struct {
 		timeout    time.Duration
 		encrypt    bool
 		terminator rune
+		cert       []byte
+		keyID      string
 	}
+	encrypt  func(string, string, []byte) []byte
 	lambdaIn struct {
 		name  string
 		input json.RawMessage
@@ -56,10 +59,9 @@ func (st *testCallState) Send(s string, ssml bool) {
 	st.o = s
 	st.oSSML = ssml
 }
-func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool, terminator rune) string {
+func (st *testCallState) Receive(count int, timeout time.Duration, terminator rune) string {
 	st.rcv.count = count
 	st.rcv.timeout = timeout
-	st.rcv.encrypt = encrypt
 	st.rcv.terminator = terminator
 	if st.i == "" {
 		return ""
@@ -113,6 +115,9 @@ func (st *testCallState) GetFlowStart(flowName string) *flow.ModuleID {
 }
 func (st *testCallState) Emit(event event.Event) {
 	st.events = append(st.events, event)
+}
+func (st *testCallState) Encrypt(in string, keyID string, cert []byte) []byte {
+	return st.encrypt(in, keyID, cert)
 }
 
 func TestMakeRunner(t *testing.T) {

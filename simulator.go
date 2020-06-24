@@ -14,7 +14,7 @@ type Simulator struct {
 	lambdas map[string]interface{}
 	flows   map[string]flow.Flow
 	modules map[flow.ModuleID]flow.Module
-	encrypt func(string) []byte
+	encrypt func(string, string, []byte) []byte
 	telFlow map[string]flow.Flow
 }
 
@@ -26,7 +26,7 @@ func New() Simulator {
 		flows:   map[string]flow.Flow{},
 		modules: map[flow.ModuleID]flow.Module{},
 		telFlow: map[string]flow.Flow{},
-		encrypt: func(in string) []byte { return []byte(in) },
+		encrypt: func(in string, keyID string, cert []byte) []byte { return []byte(in) },
 	}
 }
 
@@ -92,7 +92,7 @@ func (cs *Simulator) SetStartingFlowFor(tel string, flowName string) error {
 // SetEncryption defines how encryption is performed when encryption is enable in a Store Customer Input block.
 // No encryption is currently supplied by this simulator. By default, the string is no encrypted.
 // You may supply a function that takes the input digits and returns a cipher string. This may be real encryption or a dummy process.
-func (cs *Simulator) SetEncryption(encryptor func(in string) (encrypted []byte)) {
+func (cs *Simulator) SetEncryption(encryptor func(in string, keyID string, cert []byte) (encrypted []byte)) {
 	cs.encrypt = encryptor
 }
 
@@ -142,8 +142,8 @@ func (cs *simulatorConnector) GetModule(moduleID flow.ModuleID) *flow.Module {
 	return &m
 }
 
-func (cs *simulatorConnector) Encrypt(in string) []byte {
-	return cs.encrypt(in)
+func (cs *simulatorConnector) Encrypt(in string, keyID string, cert []byte) []byte {
+	return cs.encrypt(in, keyID, cert)
 }
 
 func (cs *simulatorConnector) InvokeLambda(named string, withJSON string) (outJSON string, outErr error, err error) {

@@ -1,7 +1,6 @@
 package simulator
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -142,7 +141,7 @@ func (s *callConnector) Send(msg string, ssml bool) {
 
 // Receive waits for a number of characters to be input.
 // If the first character is not received before the timeout time, it returns nil.
-func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bool, terminator rune) string {
+func (s *callConnector) Receive(maxDigits int, timeout time.Duration, terminator rune) string {
 	s.emit(event.InputEvent{
 		MaxDigits: maxDigits,
 		Timeout:   timeout,
@@ -168,13 +167,7 @@ func (s *callConnector) Receive(maxDigits int, timeout time.Duration, encrypt bo
 		got = got[:len(got)-1]
 	}
 
-	r := string(got)
-	if encrypt {
-		enc := s.Encrypt(r)
-		r = base64.StdEncoding.EncodeToString(enc)
-
-	}
-	return r
+	return string(got)
 }
 
 // SetExternal sets a value into the state machine.
