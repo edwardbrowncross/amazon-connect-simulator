@@ -17,6 +17,7 @@ type Expect struct {
 	evts        []event.Event
 	ready       <-chan bool
 	readyToggle chan<- bool
+	Terminated  bool
 	mutex       sync.RWMutex
 	nevers      []matcher
 }
@@ -44,6 +45,7 @@ func New(t *testing.T, c *simulator.Call) *Expect {
 			case evt, ok := <-buffer:
 				if !ok {
 					close(readyToggle)
+					th.Terminated = true
 					return
 				}
 				th.mutex.Lock()
@@ -72,6 +74,9 @@ func (th *Expect) readEvents() (ok bool) {
 }
 
 func (th *Expect) cancelReady() {
+	if th.Terminated {
+		return
+	}
 	th.readyToggle <- false
 }
 
