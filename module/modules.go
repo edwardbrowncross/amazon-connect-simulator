@@ -11,7 +11,7 @@ import (
 // CallConnector describes what a module needs to interact with the ongoing call.
 type CallConnector interface {
 	Send(s string, ssml bool)
-	Receive(count int, timeout time.Duration, terminator rune) string
+	Receive(count int, timeout time.Duration, terminator rune) (string, bool)
 	Encrypt(in string, keyID string, cert []byte) []byte
 	Emit(event event.Event)
 	GetExternal(key string) *string

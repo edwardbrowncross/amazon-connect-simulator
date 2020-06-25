@@ -44,7 +44,11 @@ func (m storeUserInput) Run(call CallConnector) (next *flow.ModuleID, err error)
 	if p.TerminatorDigits != nil {
 		terminator, _ = utf8.DecodeRuneInString(*p.TerminatorDigits)
 	}
-	entry := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, terminator)
+	entry, ok := call.Receive(p.MaxDigits, time.Duration(timeout)*time.Second, terminator)
+	if !ok {
+		call.SetSystem(flow.SystemLastUserInput, "Timeout")
+		return m.Branches.GetLink(flow.BranchSuccess), nil
+	}
 	if p.EncryptEntry {
 		if p.EncryptionKey == nil {
 			return nil, errors.New("missing encryption key")
