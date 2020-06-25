@@ -14,7 +14,7 @@ func (tc CallerContext) ToEnter(input string) {
 	tc.expect.cancelReady()
 	for i, r := range input {
 		select {
-		case tc.expect.c.I <- r:
+		case tc.expect.c.Caller.I <- r:
 			continue
 		case <-time.After(time.Second):
 			tc.t.Errorf("expected to be able to send input %s, but was only able to send %d characters", input, i)
@@ -36,7 +36,7 @@ func (tc CallerContext) ToPress(input rune) {
 	tc.t.Helper()
 	tc.expect.cancelReady()
 	select {
-	case tc.expect.c.I <- input:
+	case tc.expect.c.Caller.I <- input:
 	case <-time.After(time.Second):
 		tc.t.Errorf("expected to be able to send input %s, but the flow was not ready for input", string(input))
 		return
@@ -58,6 +58,6 @@ func (tc CallerContext) ToWaitForTimeout() {
 	case <-time.After(time.Second):
 		tc.t.Error("expected to wait for timeout, but no input was required")
 		return
-	case tc.expect.c.I <- 'T':
+	case tc.expect.c.Caller.I <- 'T':
 	}
 }

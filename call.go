@@ -14,10 +14,12 @@ import (
 
 // Call is used to interact with an ongoing call.
 type Call struct {
-	// Output (speaker).
-	O <-chan string
-	// Input (keypad).
-	I           chan<- rune
+	Caller struct {
+		// Output (speaker).
+		O <-chan string
+		// Input (keypad).
+		I chan<- rune
+	}
 	o           chan<- string
 	i           <-chan rune
 	Err         error
@@ -41,8 +43,10 @@ func newCall(conf CallConfig, sc *simulatorConnector, start flow.ModuleID) *Call
 	in := make(chan rune)
 	kill := make(chan interface{})
 	c := Call{
-		O:           out,
-		I:           in,
+		Caller: struct {
+			O <-chan string
+			I chan<- rune
+		}{out, in},
 		o:           out,
 		i:           in,
 		kill:        kill,

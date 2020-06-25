@@ -40,7 +40,7 @@ func New(t *testing.T, c *simulator.Call) *Expect {
 	go func() {
 		for {
 			select {
-			case <-c.O:
+			case <-c.Caller.O:
 			case evt, ok := <-buffer:
 				if !ok {
 					close(readyToggle)

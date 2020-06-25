@@ -303,7 +303,7 @@ func TestSimulator(t *testing.T) {
 	// Test debugger.
 	debugger := flowtest.NewDebugger(call)
 	debugger.SetBreakpoint("7eefafd6-402f-4759-967c-b017ef5f3969")
-	call.I <- '3'
+	call.Caller.I <- '3'
 	debugger.Wait()
 	if p, ok := debugger.Position(); !ok {
 		t.Errorf("Expected debugger to be paused but it was not")
@@ -324,7 +324,7 @@ func TestSimulator(t *testing.T) {
 		t.Errorf("Expected debugger not to be paused but it was")
 	}
 	debugger.SetBreakpointAfter("68f1b094-8c1c-4231-879d-b106e53de281")
-	call.I <- '3'
+	call.Caller.I <- '3'
 	debugger.Wait()
 	if p, ok := debugger.Position(); !ok {
 		t.Errorf("Expected debugger to be paused but it was not")
