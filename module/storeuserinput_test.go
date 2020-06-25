@@ -1,8 +1,11 @@
 package module
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,8 +48,27 @@ func TestStoreUserInput(t *testing.T) {
 			{"name":"CustomerInputType","value":"Custom"},
 			{"name":"Timeout","value":"7"},
 			{"name":"MaxDigits","value":8},
-			{"name":"EncryptEntry","value":true},
+			{"name":"EncryptEntry","value":false},
 			{"name":"DisableCancel","value":true}
+		]
+	}`
+	jsonOKEncrypted := `{
+		"id":"55c7b51c-ab55-4c63-ac42-235b4a0f904f",
+		"type":"StoreUserInput",
+		"branches":[
+			{"condition":"Success","transition":"00000000-0000-4000-0000-000000000001"},
+			{"condition":"Error","transition":"00000000-0000-4000-0000-000000000002"}
+		],
+		"parameters":[
+			{"name":"Text","value":"hello"},
+			{"name":"TextToSpeechType","value":"ssml"},
+			{"name":"CustomerInputType","value":"Custom"},
+			{"name":"Timeout","value":"7"},
+			{"name":"MaxDigits","value":8},
+			{"name":"EncryptEntry","value":true},
+			{"name":"DisableCancel","value":true},
+			{"name":"EncryptionKeyId","value":"fa0ef83f-fbfa-4acd-9bdb-a8564d35490e","namespace":null},
+			{"name":"EncryptionKey","value":"-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----","namespace":null}
 		]
 	}`
 	jsonOKCustomTerminator := `{
@@ -78,7 +100,6 @@ func TestStoreUserInput(t *testing.T) {
 		expRcvTimeout    time.Duration
 		expRcvCount      int
 		expRcvTerminator rune
-		expRcvEncrypt    bool
 		expEvt           []event.Event
 	}{
 		{
@@ -108,7 +129,6 @@ func TestStoreUserInput(t *testing.T) {
 			exp:              "00000000-0000-4000-0000-000000000001",
 			expEvt:           []event.Event{},
 			expPrompt:        "<speak>Please enter digits 1 and 3 of your passcode.</speak>",
-			expRcvEncrypt:    true,
 			expRcvTerminator: '#',
 		},
 		{
@@ -130,7 +150,31 @@ func TestStoreUserInput(t *testing.T) {
 			expRcvTimeout:    7 * time.Second,
 			expEvt:           []event.Event{},
 			expRcvTerminator: '#',
-			expRcvEncrypt:    true,
+		},
+		{
+			desc:   "success - encrypted",
+			module: jsonOKEncrypted,
+			exp:    "00000000-0000-4000-0000-000000000001",
+			state: testCallState{
+				i: "12345678",
+				encrypt: func(in string, id string, cert []byte) []byte {
+					if id != "fa0ef83f-fbfa-4acd-9bdb-a8564d35490e" {
+						t.Errorf("expected encryption ID of %s but got %s", "fa0ef83f-fbfa-4acd-9bdb-a8564d35490e", id)
+					}
+					if !strings.HasPrefix(string(cert), "-----BEGIN CERTIFICATE-----") {
+						t.Errorf("invalid certificate: %s", string(cert))
+					}
+					return []byte(fmt.Sprintf("<encrypt>%s</encrypt>", in))
+				},
+			}.init(),
+			expSys: map[flow.SystemKey]string{
+				flow.SystemLastUserInput: base64.StdEncoding.EncodeToString([]byte("<encrypt>12345678</encrypt>")),
+			},
+			expPrompt:        "hello",
+			expRcvCount:      8,
+			expRcvTimeout:    7 * time.Second,
+			expEvt:           []event.Event{},
+			expRcvTerminator: '#',
 		},
 		{
 			desc:   "success - custom terminator",
@@ -147,7 +191,6 @@ func TestStoreUserInput(t *testing.T) {
 			expRcvTimeout:    7 * time.Second,
 			expEvt:           []event.Event{},
 			expRcvTerminator: '0',
-			expRcvEncrypt:    false,
 		},
 	}
 	for _, tC := range testCases {
@@ -189,9 +232,6 @@ func TestStoreUserInput(t *testing.T) {
 			}
 			if tC.expRcvTimeout > 0 && state.rcv.timeout != tC.expRcvTimeout {
 				t.Errorf("expected receive timeout of %d but got %d", tC.expRcvTimeout, state.rcv.timeout)
-			}
-			if state.rcv.encrypt != tC.expRcvEncrypt {
-				t.Errorf("expected receive encrypt of %v but got %v", tC.expRcvEncrypt, state.rcv.encrypt)
 			}
 			if state.rcv.terminator != tC.expRcvTerminator {
 				t.Errorf("expected receive terminator of %s but got %s", string(tC.expRcvTerminator), string(state.rcv.terminator))

@@ -12,12 +12,12 @@ import (
 
 // Simulator is capable of starting new simulated call flows.
 type Simulator struct {
-	lambdas      map[string]interface{}
-	flows        map[string]flow.Flow
-	modules      map[flow.ModuleID]flow.Module
-	encrypt      func(string) []byte
-	isInHours    func(string, bool, time.Time) (bool, error)
-	startingFlow *flow.Flow
+	lambdas   map[string]interface{}
+	flows     map[string]flow.Flow
+	modules   map[flow.ModuleID]flow.Module
+	encrypt   func(string, string, []byte) []byte
+	isInHours func(string, bool, time.Time) (bool, error)
+	telFlow   map[string]flow.Flow
 }
 
 // New creates a new call simulator.
@@ -27,7 +27,8 @@ func New() Simulator {
 		lambdas:   map[string]interface{}{},
 		flows:     map[string]flow.Flow{},
 		modules:   map[flow.ModuleID]flow.Module{},
-		encrypt:   func(in string) []byte { return []byte(in) },
+		telFlow:   map[string]flow.Flow{},
+		encrypt:   func(in string, keyID string, cert []byte) []byte { return []byte(in) },
 		isInHours: func(string, bool, time.Time) (bool, error) { return true, nil },
 	}
 }
@@ -78,22 +79,23 @@ func (cs *Simulator) RegisterLambda(name string, fn interface{}) error {
 	return nil
 }
 
-// SetStartingFlow specifies the name of the flow that should be run when a new call comes in.
+// SetStartingFlowFor specifies the name of the flow that should be run when a new call comes in to a given number.
+// The telephone number should match what will be used when creating a call.
 // The name is the full name given to the flow in the Amazon Connect ui.
 // You must run this once before starting a simulated call.
-func (cs *Simulator) SetStartingFlow(flowName string) error {
+func (cs *Simulator) SetStartingFlowFor(tel string, flowName string) error {
 	f, ok := cs.flows[flowName]
 	if !ok {
 		return errors.New("starting flow not found. Load the flow with LoadFlow before calling this method")
 	}
-	cs.startingFlow = &f
+	cs.telFlow[tel] = f
 	return nil
 }
 
 // SetEncryption defines how encryption is performed when encryption is enable in a Store Customer Input block.
 // No encryption is currently supplied by this simulator. By default, the string is no encrypted.
 // You may supply a function that takes the input digits and returns a cipher string. This may be real encryption or a dummy process.
-func (cs *Simulator) SetEncryption(encryptor func(in string) (encrypted []byte)) {
+func (cs *Simulator) SetEncryption(encryptor func(in string, keyID string, cert []byte) (encrypted []byte)) {
 	cs.encrypt = encryptor
 }
 
@@ -108,10 +110,14 @@ func (cs *Simulator) SetInHoursCheck(checker func(name string, isQueue bool, tim
 // StartCall starts a new call asynchronously and returns a Call object for interacting with that call.
 // Many independent calls can be spawned from one simulator.
 func (cs *Simulator) StartCall(config CallConfig) (*Call, error) {
-	if cs.startingFlow == nil {
-		return nil, errors.New("no starting flow set. Call SetStartingFlow before starting a call")
+	if config.DestNumber == "" {
+		return nil, errors.New("a destination number must be provided in order to start a flow")
 	}
-	return newCall(config, &simulatorConnector{cs}, *&cs.startingFlow.Start), nil
+	start, ok := cs.telFlow[config.DestNumber]
+	if !ok {
+		return nil, errors.New("no starting flow set. Call SetStartingFlowFor before starting a call")
+	}
+	return newCall(config, &simulatorConnector{cs}, start.Start), nil
 }
 
 // simulatorConnector exposes methods for modules to get information from the base simulator.
@@ -147,8 +153,8 @@ func (cs *simulatorConnector) GetModule(moduleID flow.ModuleID) *flow.Module {
 	return &m
 }
 
-func (cs *simulatorConnector) Encrypt(in string) []byte {
-	return cs.encrypt(in)
+func (cs *simulatorConnector) Encrypt(in string, keyID string, cert []byte) []byte {
+	return cs.encrypt(in, keyID, cert)
 }
 
 func (cs *simulatorConnector) InvokeLambda(named string, withJSON string) (outJSON string, outErr error, err error) {

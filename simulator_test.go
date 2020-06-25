@@ -230,25 +230,28 @@ func TestSimulator(t *testing.T) {
 	var call *Call
 
 	// Try to start call without starting flow set. Expect error.
-	_, err = sim.StartCall(CallConfig{})
+	_, err = sim.StartCall(CallConfig{
+		SourceNumber: "+447878123456",
+		DestNumber:   "+441121234567",
+	})
 	if err == nil {
 		t.Error("expected error starting call early but got none.")
 	}
 
 	// Set incorrect starting flow. Expect error.
-	err = sim.SetStartingFlow("Sample self destruct flow")
+	err = sim.SetStartingFlowFor("+441121234567", "Sample self destruct flow")
 	if err == nil {
 		t.Error("expected error setting non-existant starting flow but got none.")
 	}
 
 	// Set correct starting flow.
-	err = sim.SetStartingFlow("Sample inbound flow (first contact experience)")
+	err = sim.SetStartingFlowFor("+441121234567", "Sample inbound flow (first contact experience)")
 	if err != nil {
 		t.Fatalf("unexpected error setting starting flow: %v", err)
 	}
 
 	// Set a custom encryption function.
-	sim.SetEncryption(func(in string) []byte {
+	sim.SetEncryption(func(in string, keyID string, cert []byte) []byte {
 		return []byte(fmt.Sprintf("(I am encrypting)>༼ つ ◕_◕ ༽つ%s", in))
 	})
 
@@ -256,6 +259,14 @@ func TestSimulator(t *testing.T) {
 	sim.SetInHoursCheck(func(name string, isQueue bool, t time.Time) (bool, error) {
 		return t.Hour() >= 9 && t.Hour() < 17, nil
 	})
+
+	// Start a call without a dest number. Expect error.
+	call, err = sim.StartCall(CallConfig{
+		SourceNumber: "+447878123456",
+	})
+	if err == nil {
+		t.Error("expected error starting a call without a destination number")
+	}
 
 	// Start a call.
 	call, err = sim.StartCall(CallConfig{
@@ -279,12 +290,16 @@ func TestSimulator(t *testing.T) {
 	expect.Prompt().Never().Not().WithVoice("Joanna").ToPlay()
 	expect.Lambda().WithARN("self-destruct").Never().ToBeInvoked()
 
+	press3 := func(exp *flowtest.Expect) {
+		exp.Caller().ToPress('3')
+	}
+
 	expect.Prompt().WithPlaintext().ToEqual("Hello, thanks for calling. These are some examples of what the Amazon Connect virtual contact center can enable you to do.")
 	expect.Prompt().Not().WithSSML().ToContain("3 to hear the results of an AWS Lambda data dip")
-	expect.ToEnter("3")
+	expect.To(press3)
 	expect.Prompt().ToContain("Now performing a data dip using AWS Lambda.")
 	expect.Lambda().WithParameter("butter", "salted").Not().ToBeInvoked()
-	expect.Lambda().WithTimeout(4 * time.Second).WithARN("state-lookup").Not().WithARN("clearly-not-this-one").ToBeInvoked()
+	expect.Lambda().WithTimeout(4*time.Second).WithARN("state-lookup").Not().WithARN("clearly-not-this-one").WithReturn("State", "United Kingdom").ToSucceed()
 	expect.Prompt().ToEqual("Based on the number you are calling from, your area code is located in United Kingdom")
 	expect.Prompt().ToEqual("Now returning you to the main menu.")
 	expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
@@ -293,7 +308,7 @@ func TestSimulator(t *testing.T) {
 	// Test debugger.
 	debugger := flowtest.NewDebugger(call)
 	debugger.SetBreakpoint("7eefafd6-402f-4759-967c-b017ef5f3969")
-	call.I <- '3'
+	call.Caller.I <- '3'
 	debugger.Wait()
 	if p, ok := debugger.Position(); !ok {
 		t.Errorf("Expected debugger to be paused but it was not")
@@ -314,7 +329,7 @@ func TestSimulator(t *testing.T) {
 		t.Errorf("Expected debugger not to be paused but it was")
 	}
 	debugger.SetBreakpointAfter("68f1b094-8c1c-4231-879d-b106e53de281")
-	call.I <- '3'
+	call.Caller.I <- '3'
 	debugger.Wait()
 	if p, ok := debugger.Position(); !ok {
 		t.Errorf("Expected debugger to be paused but it was not")
@@ -334,11 +349,11 @@ func TestSimulator(t *testing.T) {
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("2 to securely enter content")
-				expect.ToEnter("2")
+				expect.Caller().ToEnter("2")
 				expect.Prompt().Not().ToContain("error")
 				expect.Prompt().ToEqual("This flow enables users to enter information secured by an encryption key you provide.")
 				expect.Prompt().ToContain("Please enter your credit card number")
-				expect.ToEnter("1234098712340987#")
+				expect.Caller().ToEnter("1234098712340987#")
 				expect.Attributes().ToUpdate("EncryptedCreditCard", base64.StdEncoding.EncodeToString([]byte("(I am encrypting)>༼ つ ◕_◕ ༽つ1234098712340987")))
 				expect.Transfer().ToFlow("Sample inbound flow (first contact experience)")
 			},
@@ -348,7 +363,7 @@ func TestSimulator(t *testing.T) {
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567"},
 			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("4 to set a screen pop for the agent")
-				expect.ToEnter("4")
+				expect.Caller().ToPress('4')
 				expect.Attributes().Unordered().ToUpdateKey("note")
 				expect.Prompt().ToEqual("This sets a note attribute for use in a screenpop.")
 				expect.Transfer().ToQueue("BasicQueue")
@@ -359,7 +374,7 @@ func TestSimulator(t *testing.T) {
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567", Time: time.Date(2020, 06, 22, 13, 00, 0, 0, time.UTC)},
 			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
-				expect.ToEnter("1")
+				expect.Caller().ToPress('1')
 				expect.Prompt().Not().ToEqual("We are not able to take your call right now. Goodbye.")
 			},
 		},
@@ -368,7 +383,7 @@ func TestSimulator(t *testing.T) {
 			conf: CallConfig{SourceNumber: "+447878123456", DestNumber: "+441121234567", Time: time.Date(2020, 06, 22, 21, 00, 0, 0, time.UTC)},
 			assert: func(expect *flowtest.Expect) {
 				expect.Prompt().ToContain("Press 1 to be put in queue for an agent")
-				expect.ToEnter("1")
+				expect.Caller().ToPress('1')
 				expect.Prompt().ToEqual("We are not able to take your call right now. Goodbye.")
 			},
 		},

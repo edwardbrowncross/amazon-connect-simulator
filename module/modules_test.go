@@ -20,7 +20,10 @@ type testCallState struct {
 		timeout    time.Duration
 		encrypt    bool
 		terminator rune
+		cert       []byte
+		keyID      string
 	}
+	encrypt  func(string, string, []byte) []byte
 	lambdaIn struct {
 		name  string
 		input json.RawMessage
@@ -58,10 +61,9 @@ func (st *testCallState) Send(s string, ssml bool) {
 	st.o = s
 	st.oSSML = ssml
 }
-func (st *testCallState) Receive(count int, timeout time.Duration, encrypt bool, terminator rune) string {
+func (st *testCallState) Receive(count int, timeout time.Duration, terminator rune) string {
 	st.rcv.count = count
 	st.rcv.timeout = timeout
-	st.rcv.encrypt = encrypt
 	st.rcv.terminator = terminator
 	if st.i == "" {
 		return ""
@@ -118,6 +120,9 @@ func (st *testCallState) Emit(event event.Event) {
 }
 func (st *testCallState) IsInHours(name string, isQueue bool) (bool, error) {
 	return st.inHours(name, isQueue, st.time)
+}
+func (st *testCallState) Encrypt(in string, keyID string, cert []byte) []byte {
+	return st.encrypt(in, keyID, cert)
 }
 
 func TestMakeRunner(t *testing.T) {
